@@ -14,7 +14,7 @@ linux_arm: prepare
 
 run:
 	go run main.go
-all: mac windows linux
+all: mac windows linux linux_arm
 
 prepare:
 	mkdir -p ./build/

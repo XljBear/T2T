@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-//var listenerList []net.Listener
-//var connList []net.Conn
-
 type Link struct {
 	Conn      net.Conn
 	Start     time.Time
@@ -89,7 +86,7 @@ func StartProxyServer() (success bool) {
 			continue
 		}
 		proxyInfo.Listener = listener
-		proxyManager[proxyAddressRecord.Name] = proxyInfo
+		proxyManager[proxyAddressRecord.UUID] = proxyInfo
 		fmt.Printf("[%s]Proxying started on %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress)
 		go func(proxyAddressRecord *config.ProxyAddressRecord, proxyInfo *ProxyInfo) {
 			for {

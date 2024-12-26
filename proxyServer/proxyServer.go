@@ -3,65 +3,110 @@ package proxyServer
 import (
 	"T2T/config"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net"
+	"time"
 )
 
-var listenerList []net.Listener
-var connList []net.Conn
+//var listenerList []net.Listener
+//var connList []net.Conn
 
-func handleConnection(localConn net.Conn, remoteAddr string) {
+type Link struct {
+	Conn      net.Conn
+	Start     time.Time
+	InBounds  uint64
+	OutBounds uint64
+}
+type ProxyInfo struct {
+	Listener  net.Listener
+	MaxLink   uint
+	Links     map[string]Link
+	InBounds  uint64
+	OutBounds uint64
+}
+
+var proxyManager map[string]ProxyInfo
+
+func handleConnection(proxyInfo *ProxyInfo, localConn net.Conn, remoteAddr string) {
 	defer localConn.Close()
 	remoteConn, err := net.Dial("tcp", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
-	defer remoteConn.Close()
-	go io.Copy(remoteConn, localConn)
-	io.Copy(localConn, remoteConn)
+	link := Link{
+		Start: time.Now(),
+		Conn:  localConn,
+	}
+	uid := uuid.New().String()
+	proxyInfo.Links[uid] = link
+
+	var outBounds int64
+	var inBounds int64
+	go func() {
+		inBounds, _ = io.Copy(remoteConn, localConn)
+	}()
+	outBounds, _ = io.Copy(localConn, remoteConn)
+
+	proxyInfo.OutBounds += uint64(outBounds)
+	proxyInfo.InBounds += uint64(inBounds)
+	delete(proxyInfo.Links, uid)
+	remoteConn.Close()
+}
+func CloseAllProxy() {
+	for _, proxy := range proxyManager {
+		for _, conn := range proxy.Links {
+			_ = conn.Conn.Close()
+		}
+		_ = proxy.Listener.Close()
+	}
+	proxyManager = make(map[string]ProxyInfo)
 }
 func StartProxyServer() (success bool) {
-	if len(listenerList) != 0 {
+	if len(proxyManager) != 0 {
 		fmt.Println("Restarting T2T server")
-		for _, conn := range connList {
-			conn.Close()
-		}
-		for _, listener := range listenerList {
-			listener.Close()
-		}
-		connList = []net.Conn{}
-		listenerList = []net.Listener{}
+		CloseAllProxy()
 	} else {
+		proxyManager = make(map[string]ProxyInfo)
 		fmt.Println("Starting T2T server")
 	}
 	if len(config.Cfg.Proxy) == 0 {
 		fmt.Println("No proxy configured, exiting")
 		return false
 	}
-	for _, proxy := range config.Cfg.Proxy {
-		if !proxy.Status {
+	for _, proxyAddressRecord := range config.Cfg.Proxy {
+		if !proxyAddressRecord.Status {
 			continue
 		}
-		fmt.Printf("[%s]Proxying %s to %s\n", proxy.Name, proxy.LocalAddress, proxy.RemoteAddress)
-		listener, err := net.Listen("tcp", proxy.LocalAddress)
+		proxyInfo := ProxyInfo{
+			Links:   make(map[string]Link),
+			MaxLink: proxyAddressRecord.MaxLink,
+		}
+		fmt.Printf("[%s]Proxying %s to %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress, proxyAddressRecord.RemoteAddress)
+		listener, err := net.Listen("tcp", proxyAddressRecord.LocalAddress)
 		if err != nil {
-			fmt.Println("Error listening on", proxy.LocalAddress, err)
+			fmt.Println("Error listening on", proxyAddressRecord.LocalAddress, err)
 			continue
 		}
-		listenerList = append(listenerList, listener)
-		fmt.Printf("[%s]Proxying started on %s\n", proxy.Name, proxy.LocalAddress)
-		go func() {
+		proxyInfo.Listener = listener
+		proxyManager[proxyAddressRecord.Name] = proxyInfo
+		fmt.Printf("[%s]Proxying started on %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress)
+		go func(proxyAddressRecord *config.ProxyAddressRecord, proxyInfo *ProxyInfo) {
 			for {
 				localConn, err := listener.Accept()
-				connList = append(connList, localConn)
 				if err != nil {
 					return
 				}
-				go handleConnection(localConn, proxy.RemoteAddress)
+				if proxyInfo.MaxLink > 0 && uint(len(proxyInfo.Links)) >= proxyInfo.MaxLink {
+					_ = localConn.Close()
+					fmt.Printf("[%s]Max link reached, rejecting connection\n", proxyAddressRecord.Name)
+					continue
+				}
+				go handleConnection(proxyInfo, localConn, proxyAddressRecord.RemoteAddress)
 			}
-		}()
+		}(&proxyAddressRecord, &proxyInfo)
 	}
-	if len(listenerList) == 0 {
+	if len(proxyManager) == 0 {
 		fmt.Println("No proxy configured, exiting")
 		return false
 	}

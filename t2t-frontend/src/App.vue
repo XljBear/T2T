@@ -13,31 +13,32 @@ const axiosInstance = axios.create({
 });
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
-const isEdit = ref(false);
-const editIndex = ref(0);
 const proxyForm = ref({
+  uuid: '',
   name: '',
   local_address: '',
   remote_address: '',
+  max_link: 0,
   status: true,
 });
 onMounted(() => {
   getProxyList();
 })
 const createProxyForm = () => {
-  isEdit.value = false;
   showProxyForm.value = true;
   proxyForm.value = {
+    uuid: '',
     name: '',
     local_address: '',
     remote_address: '',
+    max_link: 0,
     status: true,
   };
 }
 const createProxy = () => {
-  if (!proxyForm.value.name || !proxyForm.value.local_address || !proxyForm.value.remote_address) {
+  if (!proxyForm.value.name || !proxyForm.value.local_address || !proxyForm.value.remote_address || proxyForm.value.max_link < 0) {
     ElMessage({
-      message: '请填写完整配置信息',
+      message: '请填写完整正确的配置信息',
       type: 'warning',
     })
     return;
@@ -65,25 +66,20 @@ const createProxy = () => {
       }).finally(() => {
         showProxyForm.value = false;
         proxyForm.value = {
+          uuid: '',
           name: '',
           local_address: '',
           remote_address: '',
+          max_link: 0,
           status: true,
         };
         getProxyList();
       });
-      showProxyForm.value = false;
-      proxyForm.value = {
-        name: '',
-        local_address: '',
-        remote_address: '',
-        status: true,
-      };
     })
     .catch(() => {
     });
 }
-const deleteProxy = (index: number) => {
+const deleteProxy = (index: number, uuid: string) => {
   ElMessageBox.confirm(
     '确认删除 [' + proxyData.value[index]['name'] + '] 反代理配置吗？',
     {
@@ -92,7 +88,7 @@ const deleteProxy = (index: number) => {
       type: 'warning',
     }
   ).then(() => {
-    axiosInstance.delete("/proxy/" + index).then(() => {
+    axiosInstance.delete("/proxy/" + uuid).then(() => {
       ElMessage({
         message: '删除配置成功',
         type: 'success',
@@ -115,12 +111,12 @@ const getProxyList = () => {
 }
 const editProxy = (index: number) => {
   showProxyForm.value = true;
+  proxyForm.value.uuid = proxyData.value[index].uuid;
   proxyForm.value.local_address = proxyData.value[index].local_address;
   proxyForm.value.remote_address = proxyData.value[index].remote_address;
   proxyForm.value.name = proxyData.value[index].name;
+  proxyForm.value.max_link = proxyData.value[index].max_link
   proxyForm.value.status = proxyData.value[index].status;
-  isEdit.value = true;
-  editIndex.value = index;
 }
 const updateProxy = () => {
   if (!proxyForm.value.name || !proxyForm.value.local_address || !proxyForm.value.remote_address) {
@@ -139,7 +135,7 @@ const updateProxy = () => {
     }
   )
     .then(() => {
-      axiosInstance.put("/proxy/" + editIndex.value, proxyForm.value).then(() => {
+      axiosInstance.put("/proxy/" + proxyForm.value.uuid, proxyForm.value).then(() => {
         ElMessage({
           message: '更新配置成功',
           type: 'success',
@@ -152,9 +148,11 @@ const updateProxy = () => {
       }).finally(() => {
         showProxyForm.value = false;
         proxyForm.value = {
+          uuid: '',
           name: '',
           local_address: '',
           remote_address: '',
+          max_link: 0,
           status: true,
         };
         getProxyList();
@@ -173,6 +171,7 @@ const restartService = () => {
     }
   ).then(() => {
     axiosInstance.post("/restart").then(() => {
+      getProxyList();
       ElMessage({
         message: '服务重启成功',
         type: 'success',
@@ -202,6 +201,12 @@ const restartService = () => {
         <el-table-column prop="name" label="名称" />
         <el-table-column prop="local_address" label="本地端口" min-width="150" />
         <el-table-column prop="remote_address" label="远程端口" min-width="150" />
+        <el-table-column prop="max_link" label="最大连接数">
+          <template #default="scope">
+            <el-tag type="success" v-if="scope.row.max_link == 0">无限制</el-tag>
+            <el-tag type="warning" v-else>{{ scope.row.max_link }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态">
           <template #default="scope">
             <el-tag type="success" v-if="scope.row.status">生效</el-tag>
@@ -211,7 +216,7 @@ const restartService = () => {
         <el-table-column label="操作" min-width="120">
           <template #default="scope">
             <el-button type="primary" link @click="editProxy(scope.$index)">编辑</el-button>
-            <el-button type="danger" link @click="deleteProxy(scope.$index)">删除</el-button>
+            <el-button type="danger" link @click="deleteProxy(scope.$index, scope.row.uuid)">删除</el-button>
           </template>
         </el-table-column>
         <template #empty>
@@ -221,10 +226,11 @@ const restartService = () => {
         </template>
       </el-table>
       <template #footer>
-        <div class="card-footer">©StupidBear Studio 2024</div>
+        <div class="card-footer">T2T Server v0.0.1 © StupidBear Studio 2024</div>
       </template>
     </el-card>
-    <el-dialog v-model="showProxyForm" :title="isEdit ? '编辑反代理配置' : '创建反代理配置'" width="100%" style="max-width: 500px;">
+    <el-dialog v-model="showProxyForm" :title="proxyForm.uuid != '' ? '编辑反代理配置' : '创建反代理配置'" width="100%"
+      style="max-width: 500px;">
       <el-form :model="proxyForm">
         <el-form-item label="业务名称 :" :label-width="80">
           <el-input v-model="proxyForm.name" autocomplete="off" />
@@ -235,6 +241,9 @@ const restartService = () => {
         <el-form-item label="远程端口 :" :label-width="80">
           <el-input v-model="proxyForm.remote_address" autocomplete="off" />
         </el-form-item>
+        <el-form-item label="最大连接数 :" :label-width="90">
+          <el-input v-model.number="proxyForm.max_link" autocomplete="off" />
+        </el-form-item>
         <el-form-item label="启用 :" :label-width="80">
           <el-checkbox v-model="proxyForm.status" />
         </el-form-item>
@@ -242,8 +251,8 @@ const restartService = () => {
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="showProxyForm = false">取消</el-button>
-          <el-button type="primary" @click="isEdit ? updateProxy() : createProxy()">
-            {{ isEdit ? '更新' : '创建' }}
+          <el-button type="primary" @click="proxyForm.uuid != '' ? updateProxy() : createProxy()">
+            {{ proxyForm.uuid != '' ? '更新' : '创建' }}
           </el-button>
         </div>
       </template>
@@ -262,6 +271,10 @@ const restartService = () => {
   .card-header {
     display: flex;
     justify-content: space-between;
+  }
+  .card-footer{
+    color: #ccc;
+    font-size: 12px;
   }
 }
 </style>

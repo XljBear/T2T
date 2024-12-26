@@ -198,7 +198,7 @@ const restartService = () => {
         </div>
       </template>
       <el-table :data="proxyData" stripe style="width: 100%">
-        <el-table-column prop="name" label="名称" />
+        <el-table-column fixed="left" prop="name" label="名称" />
         <el-table-column prop="local_address" label="本地端口" min-width="150" />
         <el-table-column prop="remote_address" label="远程端口" min-width="150" />
         <el-table-column prop="max_link" label="最大连接数">
@@ -213,7 +213,7 @@ const restartService = () => {
             <el-tag type="warning" v-else>禁用</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="120">
+        <el-table-column fixed="right" label="操作" min-width="120">
           <template #default="scope">
             <el-button type="primary" link @click="editProxy(scope.$index)">编辑</el-button>
             <el-button type="danger" link @click="deleteProxy(scope.$index, scope.row.uuid)">删除</el-button>

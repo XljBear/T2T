@@ -113,6 +113,27 @@ func StartPanelServer(panelListenAddress string) {
 		proxyServer.StartProxyServer()
 		ctx.JSON(200, gin.H{})
 	})
+	r.GET("/api/traffic", func(ctx *gin.Context) {
+		type trafficData struct {
+			DownlinkInSecond uint64 `json:"downlink_in_second"`
+			DownlinkTotal    uint64 `json:"downlink_total"`
+			UplinkInSecond   uint64 `json:"uplink_in_second"`
+			UplinkTotal      uint64 `json:"uplink_total"`
+			LinkCount        int    `json:"link_count"`
+		}
+		var traffic map[string]trafficData
+		traffic = make(map[string]trafficData)
+		for UUID, proxy := range proxyServer.ProxyManager {
+			traffic[UUID] = trafficData{
+				DownlinkInSecond: proxy.Traffic.DownlinkInSecond,
+				DownlinkTotal:    proxy.Traffic.DownlinkTotal,
+				UplinkInSecond:   proxy.Traffic.UplinkInSecond,
+				UplinkTotal:      proxy.Traffic.UplinkTotal,
+				LinkCount:        len(proxy.Links),
+			}
+		}
+		ctx.JSON(200, traffic)
+	})
 	fmt.Println("Panel server is running on " + panelListenAddress)
 	r.Run(panelListenAddress)
 }

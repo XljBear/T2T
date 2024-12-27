@@ -22,6 +22,7 @@ type TrafficMonitor struct {
 }
 
 func (tm *TrafficMonitor) Start() {
+	tm.BreakSignal = make(chan bool)
 	for {
 		tm.DownlinkInSecond = tm.DownlinkRecord
 		tm.UplinkInSecond = tm.UplinkRecord
@@ -61,40 +62,45 @@ func (tm *TrafficMonitor) Uplink(traffic uint64) {
 }
 
 type Link struct {
-	Conn    net.Conn
-	Start   time.Time
-	Traffic *TrafficMonitor
+	Conn     net.Conn
+	Start    time.Time
+	RemoteIP string
+	Proxy    *Proxy
+	Traffic  *TrafficMonitor
 }
-type ProxyInfo struct {
+type Proxy struct {
 	Listener net.Listener
 	MaxLink  uint
-	Links    map[string]Link
+	Links    map[string]*Link
 	Traffic  *TrafficMonitor
 }
 
-var proxyManager map[string]ProxyInfo
+var ProxyManager map[string]Proxy
 
-func handleConnection(proxyInfo *ProxyInfo, localConn net.Conn, remoteAddr string) {
+func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	defer localConn.Close()
 	remoteConn, err := net.Dial("tcp", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
+	remoteTcpAddr := localConn.RemoteAddr().(*net.TCPAddr)
 	link := Link{
-		Start:   time.Now(),
-		Conn:    localConn,
-		Traffic: &TrafficMonitor{},
+		Start:    time.Now(),
+		Conn:     localConn,
+		RemoteIP: remoteTcpAddr.IP.String(),
+		Proxy:    proxy,
+		Traffic:  &TrafficMonitor{},
 	}
 	uid := uuid.New().String()
-	proxyInfo.Links[uid] = link
-	link.Traffic.ParentTrafficMonitor = proxyInfo.Traffic
+	proxy.Links[uid] = &link
+	link.Traffic.ParentTrafficMonitor = proxy.Traffic
 	go link.Traffic.Start()
 	brokenSignal := make(chan bool)
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
 	go proxyTransform(localConn, remoteConn, link.Traffic, "Uplink", brokenSignal)
 	<-brokenSignal
 	link.Traffic.Stop()
-	delete(proxyInfo.Links, uid)
+	delete(proxy.Links, uid)
 	remoteConn.Close()
 }
 func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, trafficType string, brokenSignal chan bool) {
@@ -118,7 +124,7 @@ func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, 
 	}
 }
 func CloseAllProxy() {
-	for _, proxy := range proxyManager {
+	for _, proxy := range ProxyManager {
 		for _, conn := range proxy.Links {
 			conn.Traffic.Stop()
 			_ = conn.Conn.Close()
@@ -126,14 +132,14 @@ func CloseAllProxy() {
 		proxy.Traffic.Stop()
 		_ = proxy.Listener.Close()
 	}
-	proxyManager = make(map[string]ProxyInfo)
+	ProxyManager = make(map[string]Proxy)
 }
 func StartProxyServer() (success bool) {
-	if len(proxyManager) != 0 {
+	if len(ProxyManager) != 0 {
 		fmt.Println("Restarting T2T server")
 		CloseAllProxy()
 	} else {
-		proxyManager = make(map[string]ProxyInfo)
+		ProxyManager = make(map[string]Proxy)
 		fmt.Println("Starting T2T server")
 	}
 	if len(config.Cfg.Proxy) == 0 {
@@ -144,8 +150,8 @@ func StartProxyServer() (success bool) {
 		if !proxyAddressRecord.Status {
 			continue
 		}
-		proxyInfo := ProxyInfo{
-			Links:   make(map[string]Link),
+		proxy := Proxy{
+			Links:   make(map[string]*Link),
 			MaxLink: proxyAddressRecord.MaxLink,
 			Traffic: &TrafficMonitor{},
 		}
@@ -155,26 +161,26 @@ func StartProxyServer() (success bool) {
 			fmt.Println("Error listening on", proxyAddressRecord.LocalAddress, err)
 			continue
 		}
-		proxyInfo.Listener = listener
-		proxyManager[proxyAddressRecord.UUID] = proxyInfo
-		go proxyInfo.Traffic.Start()
+		proxy.Listener = listener
+		ProxyManager[proxyAddressRecord.UUID] = proxy
+		go proxy.Traffic.Start()
 		fmt.Printf("[%s]Proxying started on %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress)
-		go func(proxyAddressRecord *config.ProxyAddressRecord, proxyInfo *ProxyInfo) {
+		go func(proxyAddressRecord *config.ProxyAddressRecord, proxy *Proxy) {
 			for {
 				localConn, err := listener.Accept()
 				if err != nil {
 					return
 				}
-				if proxyInfo.MaxLink > 0 && uint(len(proxyInfo.Links)) >= proxyInfo.MaxLink {
+				if proxy.MaxLink > 0 && uint(len(proxy.Links)) >= proxy.MaxLink {
 					_ = localConn.Close()
 					fmt.Printf("[%s]Max link reached, rejecting connection\n", proxyAddressRecord.Name)
 					continue
 				}
-				go handleConnection(proxyInfo, localConn, proxyAddressRecord.RemoteAddress)
+				go handleConnection(proxy, localConn, proxyAddressRecord.RemoteAddress)
 			}
-		}(&proxyAddressRecord, &proxyInfo)
+		}(&proxyAddressRecord, &proxy)
 	}
-	if len(proxyManager) == 0 {
+	if len(ProxyManager) == 0 {
 		fmt.Println("No proxy configured, exiting")
 		return false
 	}

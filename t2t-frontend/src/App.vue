@@ -2,7 +2,8 @@
 import axios from 'axios';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { onMounted, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus';
+import TrafficChart from './components/trafficChart.vue';
 let devMode = true;
 if (import.meta.env.MODE === 'production') {
   devMode = false;
@@ -13,6 +14,7 @@ const axiosInstance = axios.create({
 });
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
+const proxyTrafficChartRefs = ref<any>({});
 const proxyForm = ref({
   uuid: '',
   name: '',
@@ -104,9 +106,17 @@ const deleteProxy = (index: number, uuid: string) => {
   }).catch(() => {
   });
 }
+const refreshProxyTrafficTimer = ref<number>(0);
 const getProxyList = () => {
+  if (refreshProxyTrafficTimer.value != 0) {
+    clearInterval(refreshProxyTrafficTimer.value);
+  }
+  proxyTrafficChartRefs.value = new Object;
   axiosInstance.get("/proxy").then((response) => {
     proxyData.value = response.data;
+    if (proxyData.value.length > 0) {
+      refreshProxyTrafficTimer.value = setInterval(refreshProxyTrafficData, 1000);
+    }
   });
 }
 const editProxy = (index: number) => {
@@ -185,6 +195,19 @@ const restartService = () => {
   }).catch(() => {
   });
 }
+const proxyTrafficData = ref<any>({});
+const refreshProxyTrafficData = () => {
+  axiosInstance.get("/traffic").then((response) => {
+    proxyTrafficData.value = {};
+    Object.entries(response.data).forEach(([key, data]) => {
+      if (proxyTrafficChartRefs.value[key]) {
+        const trafficData: any = data as object
+        proxyTrafficChartRefs.value[key].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second)
+      }
+      proxyTrafficData.value[key] = data;
+    });
+  });
+}
 </script>
 
 <template>
@@ -201,10 +224,15 @@ const restartService = () => {
         <el-table-column fixed="left" prop="name" label="名称" />
         <el-table-column prop="local_address" label="本地端口" min-width="150" />
         <el-table-column prop="remote_address" label="远程端口" min-width="150" />
-        <el-table-column prop="max_link" label="最大连接数">
+        <el-table-column label="连接数" min-width="100">
           <template #default="scope">
-            <el-tag type="success" v-if="scope.row.max_link == 0">无限制</el-tag>
-            <el-tag type="warning" v-else>{{ scope.row.max_link }}</el-tag>
+            {{ proxyTrafficData[scope.row.uuid] ? proxyTrafficData[scope.row.uuid].link_count : 0 }} / {{ scope.row.max_link
+              == 0 ? '无限制' : scope.row.max_link }}
+          </template>
+        </el-table-column>
+        <el-table-column label="数据" min-width="150">
+          <template #default="scope">
+            <TrafficChart :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el" class="tChart" />
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态">
@@ -272,9 +300,15 @@ const restartService = () => {
     display: flex;
     justify-content: space-between;
   }
-  .card-footer{
+
+  .card-footer {
     color: #ccc;
     font-size: 12px;
+  }
+
+  .tChart {
+    width: 150px;
+    height: 100px;
   }
 }
 </style>

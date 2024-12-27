@@ -93,7 +93,7 @@ defineExpose({ showLinksPage })
                     </div>
                 </template>
             </el-table-column>
-            <el-table-column label="网络" min-width="150">
+            <el-table-column label="网络" min-width="200">
                 <template #default="scope">
                     <TrafficChart :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el" class="tChart" />
                 </template>

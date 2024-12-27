@@ -1,4 +1,4 @@
-.PHONY : mac windows linux linux_arm all mkdir run
+.PHONY : mac windows linux linux_arm all mkdir run web
 mac: prepare
 	 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Mac/T2T main.go
 
@@ -16,6 +16,8 @@ run:
 	go run main.go
 all: mac windows linux linux_arm
 
+web:
+	cd  t2t-frontend && yarn && yarn build
 prepare:
 	mkdir -p ./build/
 	mkdir -p ./build/T2T_Mac

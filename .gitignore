@@ -2,3 +2,4 @@ build/
 proxy.yaml
 .idea/
 .vscode/
+dist/

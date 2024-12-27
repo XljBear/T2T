@@ -144,19 +144,21 @@ func GetLinks(ctx *gin.Context) {
 
 	proxy := proxyServer.ProxyManager[uuidStr]
 	links = make([]structs.Link, 0)
-	for linkUUID, link := range proxy.Links.Range {
-		linkData := structs.Link{
-			UUID:     linkUUID.(string),
-			IP:       link.(*proxyServer.Link).RemoteIP,
-			LinkTime: link.(*proxyServer.Link).Start,
-			Traffic: &structs.TrafficData{
-				DownlinkInSecond: link.(*proxyServer.Link).Traffic.DownlinkInSecond,
-				DownlinkTotal:    link.(*proxyServer.Link).Traffic.DownlinkTotal,
-				UplinkInSecond:   link.(*proxyServer.Link).Traffic.UplinkInSecond,
-				UplinkTotal:      link.(*proxyServer.Link).Traffic.UplinkTotal,
-			},
+	if proxy != nil {
+		for linkUUID, link := range proxy.Links.Range {
+			linkData := structs.Link{
+				UUID:     linkUUID.(string),
+				IP:       link.(*proxyServer.Link).RemoteIP,
+				LinkTime: link.(*proxyServer.Link).Start,
+				Traffic: &structs.TrafficData{
+					DownlinkInSecond: link.(*proxyServer.Link).Traffic.DownlinkInSecond,
+					DownlinkTotal:    link.(*proxyServer.Link).Traffic.DownlinkTotal,
+					UplinkInSecond:   link.(*proxyServer.Link).Traffic.UplinkInSecond,
+					UplinkTotal:      link.(*proxyServer.Link).Traffic.UplinkTotal,
+				},
+			}
+			links = append(links, linkData)
 		}
-		links = append(links, linkData)
 	}
 	sort.Sort(structs.ByLinkTime(links))
 	ctx.JSON(200, links)

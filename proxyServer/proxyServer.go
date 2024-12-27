@@ -70,10 +70,14 @@ func (link *Link) Close() {
 }
 
 type Proxy struct {
-	Listener net.Listener
-	MaxLink  uint
-	Links    map[string]*Link
-	Traffic  *TrafficMonitor
+	UUID          string
+	Name          string
+	LocalAddress  string
+	RemoteAddress string
+	Listener      net.Listener
+	MaxLink       uint
+	Links         map[string]*Link
+	Traffic       *TrafficMonitor
 }
 
 var ProxyManager map[string]Proxy
@@ -153,21 +157,25 @@ func StartProxyServer() (success bool) {
 			continue
 		}
 		proxy := Proxy{
-			Links:   make(map[string]*Link),
-			MaxLink: proxyAddressRecord.MaxLink,
-			Traffic: &TrafficMonitor{},
+			UUID:          proxyAddressRecord.UUID,
+			Name:          proxyAddressRecord.Name,
+			LocalAddress:  proxyAddressRecord.LocalAddress,
+			RemoteAddress: proxyAddressRecord.RemoteAddress,
+			Links:         make(map[string]*Link),
+			MaxLink:       proxyAddressRecord.MaxLink,
+			Traffic:       &TrafficMonitor{},
 		}
-		fmt.Printf("[%s]Proxying %s to %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress, proxyAddressRecord.RemoteAddress)
-		listener, err := net.Listen("tcp", proxyAddressRecord.LocalAddress)
+		fmt.Printf("[%s]Proxying %s to %s\n", proxy.Name, proxy.LocalAddress, proxy.RemoteAddress)
+		listener, err := net.Listen("tcp", proxy.LocalAddress)
 		if err != nil {
-			fmt.Println("Error listening on", proxyAddressRecord.LocalAddress, err)
+			fmt.Println("Error listening on", proxy.LocalAddress, err)
 			continue
 		}
 		proxy.Listener = listener
-		ProxyManager[proxyAddressRecord.UUID] = proxy
+		ProxyManager[proxy.UUID] = proxy
 		proxy.Traffic.Start()
-		fmt.Printf("[%s]Proxying started on %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress)
-		go func(proxyAddressRecord *config.ProxyAddressRecord, proxy *Proxy) {
+		fmt.Printf("[%s]Proxying started on %s\n", proxy.Name, proxy.LocalAddress)
+		go func(proxy *Proxy) {
 			for {
 				localConn, err := listener.Accept()
 				if err != nil {
@@ -175,12 +183,12 @@ func StartProxyServer() (success bool) {
 				}
 				if proxy.MaxLink > 0 && uint(len(proxy.Links)) >= proxy.MaxLink {
 					_ = localConn.Close()
-					fmt.Printf("[%s]Max link reached, rejecting connection\n", proxyAddressRecord.Name)
+					fmt.Printf("[%s]Max link reached, rejecting connection\n", proxy.Name)
 					continue
 				}
-				go handleConnection(proxy, localConn, proxyAddressRecord.RemoteAddress)
+				go handleConnection(proxy, localConn, proxy.RemoteAddress)
 			}
-		}(&proxyAddressRecord, &proxy)
+		}(&proxy)
 	}
 	if len(ProxyManager) == 0 {
 		fmt.Println("No proxy configured, exiting")

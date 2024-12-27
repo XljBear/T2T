@@ -245,7 +245,7 @@ const showLinks = (uuid: string, name: string, maxLink: number) => {
             <el-tag type="warning" v-else>禁用</el-tag>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" min-width="120">
+        <el-table-column label="操作" min-width="120">
           <template #default="scope">
             <el-button type="primary" link @click="editProxy(scope.$index)">编辑</el-button>
             <el-button type="danger" link @click="deleteProxy(scope.$index, scope.row.uuid)">删除</el-button>

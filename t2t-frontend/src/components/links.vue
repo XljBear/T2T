@@ -83,10 +83,10 @@ defineExpose({ showLinksPage })
 </script>
 <template>
     <el-dialog draggable v-model="dialogTableVisible"
-        :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink})`" width="800">
+        :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink})`" width="100%" style="max-width:800px">
         <el-table :data="proxyLinksData" width="100%">
             <el-table-column fixed="left" prop="ip" label="IP地址" />
-            <el-table-column label="连接时长">
+            <el-table-column label="连接时长" min-width="120">
                 <template #default="scope">
                     <div>
                         {{ moment(scope.row.link_time).fromNow() }}

@@ -6,7 +6,7 @@ const chart = ref(null);
 const chartInstance = ref<echarts.ECharts>();
 const downlinkData = ref<number[]>([]);
 const uplinkData = ref<number[]>([]);
-const cacheDataLimit = 10;
+const cacheDataLimit = 20;
 const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -20,6 +20,7 @@ nextTick(() => {
 const redrawChart = () => {
     if (chartInstance.value) {
         chartInstance.value.setOption({
+            animation: false,
             color: ['#03c2df', '#FF0087'],
             xAxis: {
                 type: 'category',
@@ -35,6 +36,8 @@ const redrawChart = () => {
                     data: uplinkData.value,
                     type: 'line',
                     smooth: true,
+                    stack: 'confidence-band',
+                    symbol: 'none'
 
                 },
                 {
@@ -42,6 +45,8 @@ const redrawChart = () => {
                     data: downlinkData.value,
                     type: 'line',
                     smooth: true,
+                    stack: 'confidence-band',
+                    symbol: 'none'
                 }
             ]
         });
@@ -138,8 +143,8 @@ defineExpose({ pushTrafficData, clearTrafficData });
 
     .chart {
         width: 100%;
-        height: calc(100% - 20px);
-        margin-bottom: -18px;
+        height: calc(100% - 25px);
+        margin-bottom: -12px;
     }
 }
 </style>

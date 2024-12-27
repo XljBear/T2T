@@ -10,7 +10,7 @@ if (import.meta.env.MODE === 'production') {
 }
 const axiosInstance = axios.create({
   baseURL: devMode ? 'http://127.0.0.1:8080/api' : '../api',
-  timeout: 1000,
+  timeout: 3000,
 });
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
@@ -115,7 +115,7 @@ const getProxyList = () => {
   axiosInstance.get("/proxy").then((response) => {
     proxyData.value = response.data;
     if (proxyData.value.length > 0) {
-      refreshProxyTrafficTimer.value = setInterval(refreshProxyTrafficData, 1000);
+      refreshProxyTrafficTimer.value = setInterval(refreshProxyTrafficData, 1500);
     }
   });
 }
@@ -202,7 +202,7 @@ const refreshProxyTrafficData = () => {
     Object.entries(response.data).forEach(([key, data]) => {
       if (proxyTrafficChartRefs.value[key]) {
         const trafficData: any = data as object
-        proxyTrafficChartRefs.value[key].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second)
+        proxyTrafficChartRefs.value[key].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second,trafficData.downlink_total,trafficData.uplink_total);
       }
       proxyTrafficData.value[key] = data;
     });
@@ -230,7 +230,7 @@ const refreshProxyTrafficData = () => {
               == 0 ? '无限制' : scope.row.max_link }}
           </template>
         </el-table-column>
-        <el-table-column label="数据" min-width="150">
+        <el-table-column label="网络" min-width="150">
           <template #default="scope">
             <TrafficChart :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el" class="tChart" />
           </template>

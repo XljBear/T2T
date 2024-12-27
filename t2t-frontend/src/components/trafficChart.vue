@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import * as echarts from 'echarts';
 import { ref, onMounted, nextTick } from 'vue';
+import { Download, Upload, Box } from '@element-plus/icons-vue';
 const chart = ref(null);
 const chartInstance = ref<echarts.ECharts>();
 const downlinkData = ref<number[]>([]);
 const uplinkData = ref<number[]>([]);
 const cacheDataLimit = 10;
-const formatBytes = (params: any): string => {
-    const bytes = params.value
-    if (bytes === 0) return '0 Bytes';
+const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${params.seriesName} ${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 nextTick(() => {
     redrawChart();
@@ -20,7 +20,7 @@ nextTick(() => {
 const redrawChart = () => {
     if (chartInstance.value) {
         chartInstance.value.setOption({
-            color: ['#00DDFF', '#FF0087'],
+            color: ['#03c2df', '#FF0087'],
             xAxis: {
                 type: 'category',
                 show: false
@@ -28,14 +28,6 @@ const redrawChart = () => {
             yAxis: {
                 type: 'value',
                 show: false
-            },
-            tooltip: {
-                trigger: 'item',
-                axisPointer: {
-                    type: 'shadow'
-                },
-                confine: true,
-                formatter: formatBytes
             },
             series: [
                 {
@@ -59,7 +51,15 @@ onMounted(() => {
     chartInstance.value = echarts.init(chart.value);
     clearTrafficData();
 })
-const pushTrafficData = (downlink: number, uplink: number) => {
+const downlinkVal = ref(0);
+const uplinkVal = ref(0);
+const downlinkTotalVal = ref(0);
+const uplinkValTotalVal = ref(0);
+const pushTrafficData = (downlink: number, uplink: number, downlinkTotal: number, uplinkTotal: number) => {
+    downlinkVal.value = downlink;
+    uplinkVal.value = uplink;
+    downlinkTotalVal.value = downlinkTotal;
+    uplinkValTotalVal.value = uplinkTotal;
     if (downlinkData.value.length >= cacheDataLimit) {
         downlinkData.value.shift();
         uplinkData.value.shift();
@@ -72,17 +72,74 @@ const clearTrafficData = () => {
     downlinkData.value = [];
     uplinkData.value = [];
     for (let i = 0; i < cacheDataLimit; i++) {
-        pushTrafficData(0, 0);
+        pushTrafficData(0, 0, 0, 0);
     }
 }
 defineExpose({ pushTrafficData, clearTrafficData });
 </script>
 <template>
-    <div ref="chart" class="chart"></div>
+    <div class="traffic">
+        <div ref="chart" class="chart"></div>
+        <div class="info now">
+            <div class="val up"><el-icon>
+                    <Upload />
+                </el-icon> {{ formatBytes(uplinkVal) }}/s</div>
+            <div class="val down"><el-icon>
+                    <Download />
+                </el-icon> {{ formatBytes(downlinkVal) }}/s</div>
+        </div>
+        <div class="info">
+            <div class="val up"><el-icon>
+                    <Box />
+                </el-icon> {{ formatBytes(uplinkValTotalVal) }}</div>
+            <div class="val down"><el-icon>
+                    <Box />
+                </el-icon> {{ formatBytes(downlinkTotalVal) }}</div>
+        </div>
+    </div>
+
 </template>
 <style scoped lang="scss">
-.chart {
+.traffic {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    justify-items: center;
+
+    .info {
+        display: flex;
+        justify-content: center;
+        height: 15px;
+
+        .val {
+            margin-right: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #999999;
+        }
+
+        &.now {
+            .val {
+                font-size: 10px;
+                font-weight: normal;
+
+                &.up {
+                    color: #03c2df;
+                }
+
+                &.down {
+                    color: #FF0087;
+                }
+            }
+        }
+    }
+
+    .chart {
+        width: 100%;
+        height: calc(100% - 20px);
+        margin-bottom: -18px;
+    }
 }
 </style>

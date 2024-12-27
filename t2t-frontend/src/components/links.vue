@@ -113,7 +113,7 @@ defineExpose({ showLinksPage })
 </template>
 <style scoped lang="scss">
 .tChart {
-    width: 150px;
+    width: 200px;
     height: 100px;
 }
 </style>

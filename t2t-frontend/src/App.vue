@@ -312,7 +312,7 @@ const showLinks = (uuid: string, name: string, maxLink: number) => {
   }
 
   .tChart {
-    width: 150px;
+    width: 200px;
     height: 100px;
   }
 }

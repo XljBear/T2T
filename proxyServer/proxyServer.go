@@ -103,8 +103,8 @@ func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	proxy.LinksCount++
 	link.Traffic.ParentTrafficMonitor = proxy.Traffic
 	link.Traffic.Start()
-	brokenSignal := make(chan bool, 1)
-	exitSignal := make(chan bool, 1)
+	brokenSignal := make(chan bool)
+	exitSignal := make(chan bool)
 	link.ExitSignal = &exitSignal
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
 	go proxyTransform(localConn, remoteConn, link.Traffic, "Uplink", brokenSignal)

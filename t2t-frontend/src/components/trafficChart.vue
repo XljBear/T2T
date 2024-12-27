@@ -21,7 +21,7 @@ const redrawChart = () => {
     if (chartInstance.value) {
         chartInstance.value.setOption({
             animation: false,
-            color: ['#03c2df', '#FF0087'],
+            color: ['#FF0087', '#03c2df'],
             xAxis: {
                 type: 'category',
                 show: false

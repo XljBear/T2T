@@ -114,7 +114,7 @@ func GetTraffic(ctx *gin.Context) {
 		DownlinkTotal    uint64 `json:"downlink_total"`
 		UplinkInSecond   uint64 `json:"uplink_in_second"`
 		UplinkTotal      uint64 `json:"uplink_total"`
-		LinkCount        int    `json:"link_count"`
+		LinkCount        uint   `json:"link_count"`
 	}
 	var traffic map[string]trafficData
 	traffic = make(map[string]trafficData)
@@ -124,7 +124,7 @@ func GetTraffic(ctx *gin.Context) {
 			DownlinkTotal:    proxy.Traffic.DownlinkTotal,
 			UplinkInSecond:   proxy.Traffic.UplinkInSecond,
 			UplinkTotal:      proxy.Traffic.UplinkTotal,
-			LinkCount:        len(proxy.Links),
+			LinkCount:        proxy.LinksCount,
 		}
 	}
 	ctx.JSON(200, traffic)
@@ -144,16 +144,16 @@ func GetLinks(ctx *gin.Context) {
 
 	proxy := proxyServer.ProxyManager[uuidStr]
 	links = make([]structs.Link, 0)
-	for linkUUID, lk := range proxy.Links {
+	for linkUUID, link := range proxy.Links.Range {
 		linkData := structs.Link{
-			UUID:     linkUUID,
-			IP:       lk.RemoteIP,
-			LinkTime: lk.Start,
+			UUID:     linkUUID.(string),
+			IP:       link.(*proxyServer.Link).RemoteIP,
+			LinkTime: link.(*proxyServer.Link).Start,
 			Traffic: &structs.TrafficData{
-				DownlinkInSecond: lk.Traffic.DownlinkInSecond,
-				DownlinkTotal:    lk.Traffic.DownlinkTotal,
-				UplinkInSecond:   lk.Traffic.UplinkInSecond,
-				UplinkTotal:      lk.Traffic.UplinkTotal,
+				DownlinkInSecond: link.(*proxyServer.Link).Traffic.DownlinkInSecond,
+				DownlinkTotal:    link.(*proxyServer.Link).Traffic.DownlinkTotal,
+				UplinkInSecond:   link.(*proxyServer.Link).Traffic.UplinkInSecond,
+				UplinkTotal:      link.(*proxyServer.Link).Traffic.UplinkTotal,
 			},
 		}
 		links = append(links, linkData)
@@ -177,10 +177,15 @@ func KickProxyServer(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": "Invalid link uuid"})
 		return
 	}
-	if _, ok := proxyServer.ProxyManager[proxyUUIDStr].Links[linkUUIDStr]; !ok {
+	if _, ok := proxyServer.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr); !ok {
 		ctx.JSON(400, gin.H{"error": "Invalid link uuid"})
 		return
 	}
-	proxyServer.ProxyManager[proxyUUIDStr].Links[linkUUIDStr].Close()
+	proxy, ok := proxyServer.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr)
+	if !ok {
+		ctx.JSON(500, gin.H{"error": "Internal error"})
+		return
+	}
+	proxy.(*proxyServer.Link).Close()
 	ctx.JSON(200, gin.H{})
 }

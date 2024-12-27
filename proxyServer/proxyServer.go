@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -57,16 +58,16 @@ func (tm *TrafficMonitor) Uplink(traffic uint64) {
 }
 
 type Link struct {
-	Conn         net.Conn
-	Start        time.Time
-	RemoteIP     string
-	Proxy        *Proxy
-	Traffic      *TrafficMonitor
-	BrokenSignal *chan bool
+	Conn       net.Conn
+	Start      time.Time
+	RemoteIP   string
+	Proxy      *Proxy
+	Traffic    *TrafficMonitor
+	ExitSignal *chan bool
 }
 
 func (link *Link) Close() {
-	*link.BrokenSignal <- true
+	*link.ExitSignal <- true
 }
 
 type Proxy struct {
@@ -76,11 +77,12 @@ type Proxy struct {
 	RemoteAddress string
 	Listener      net.Listener
 	MaxLink       uint
-	Links         map[string]*Link
+	Links         sync.Map
+	LinksCount    uint
 	Traffic       *TrafficMonitor
 }
 
-var ProxyManager map[string]Proxy
+var ProxyManager map[string]*Proxy
 
 func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	defer localConn.Close()
@@ -97,16 +99,22 @@ func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 		Traffic:  &TrafficMonitor{},
 	}
 	uid := uuid.New().String()
-	proxy.Links[uid] = &link
+	proxy.Links.Store(uid, &link)
+	proxy.LinksCount++
 	link.Traffic.ParentTrafficMonitor = proxy.Traffic
 	link.Traffic.Start()
-	brokenSignal := make(chan bool)
-	link.BrokenSignal = &brokenSignal
+	brokenSignal := make(chan bool, 1)
+	exitSignal := make(chan bool, 1)
+	link.ExitSignal = &exitSignal
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
 	go proxyTransform(localConn, remoteConn, link.Traffic, "Uplink", brokenSignal)
-	<-brokenSignal
+	select {
+	case <-brokenSignal:
+	case <-exitSignal:
+	}
 	link.Traffic.Stop()
-	delete(proxy.Links, uid)
+	proxy.Links.Delete(uid)
+	proxy.LinksCount--
 	remoteConn.Close()
 }
 func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, trafficType string, brokenSignal chan bool) {
@@ -131,21 +139,21 @@ func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, 
 }
 func CloseAllProxy() {
 	for _, proxy := range ProxyManager {
-		for _, conn := range proxy.Links {
-			conn.Traffic.Stop()
-			_ = conn.Conn.Close()
+		for _, conn := range proxy.Links.Range {
+			conn.(*Link).Traffic.Stop()
+			_ = conn.(*Link).Conn.Close()
 		}
 		proxy.Traffic.Stop()
 		_ = proxy.Listener.Close()
 	}
-	ProxyManager = make(map[string]Proxy)
+	ProxyManager = make(map[string]*Proxy)
 }
 func StartProxyServer() (success bool) {
 	if len(ProxyManager) != 0 {
 		fmt.Println("Restarting T2T server")
 		CloseAllProxy()
 	} else {
-		ProxyManager = make(map[string]Proxy)
+		ProxyManager = make(map[string]*Proxy)
 		fmt.Println("Starting T2T server")
 	}
 	if len(config.Cfg.Proxy) == 0 {
@@ -161,7 +169,7 @@ func StartProxyServer() (success bool) {
 			Name:          proxyAddressRecord.Name,
 			LocalAddress:  proxyAddressRecord.LocalAddress,
 			RemoteAddress: proxyAddressRecord.RemoteAddress,
-			Links:         make(map[string]*Link),
+			Links:         sync.Map{},
 			MaxLink:       proxyAddressRecord.MaxLink,
 			Traffic:       &TrafficMonitor{},
 		}
@@ -172,7 +180,7 @@ func StartProxyServer() (success bool) {
 			continue
 		}
 		proxy.Listener = listener
-		ProxyManager[proxy.UUID] = proxy
+		ProxyManager[proxy.UUID] = &proxy
 		proxy.Traffic.Start()
 		fmt.Printf("[%s]Proxying started on %s\n", proxy.Name, proxy.LocalAddress)
 		go func(proxy *Proxy) {
@@ -181,7 +189,7 @@ func StartProxyServer() (success bool) {
 				if err != nil {
 					return
 				}
-				if proxy.MaxLink > 0 && uint(len(proxy.Links)) >= proxy.MaxLink {
+				if proxy.MaxLink > 0 && proxy.LinksCount >= proxy.MaxLink {
 					_ = localConn.Close()
 					fmt.Printf("[%s]Max link reached, rejecting connection\n", proxy.Name)
 					continue

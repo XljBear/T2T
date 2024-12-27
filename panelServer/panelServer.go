@@ -1,7 +1,7 @@
 package panelServer
 
 import (
-	"T2T/proxyServer/routers"
+	"T2T/panelServer/routers"
 	"embed"
 	"fmt"
 	"github.com/gin-contrib/cors"

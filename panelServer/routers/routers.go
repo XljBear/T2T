@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"T2T/proxyServer/handles"
+	"T2T/panelServer/handles"
 	"github.com/gin-gonic/gin"
 )
 

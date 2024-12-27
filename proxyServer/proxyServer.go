@@ -23,25 +23,20 @@ type TrafficMonitor struct {
 
 func (tm *TrafficMonitor) Start() {
 	tm.BreakSignal = make(chan bool)
-	for {
-		tm.DownlinkInSecond = tm.DownlinkRecord
-		tm.UplinkInSecond = tm.UplinkRecord
-		tm.DownlinkRecord = 0
-		tm.UplinkRecord = 0
-		//if tm.DownlinkInSecond != 0 || tm.UplinkInSecond != 0 {
-		//	if tm.ParentTrafficMonitor != nil {
-		//		fmt.Printf("Sub-Traffic Monitor: Downlink: %d, Uplink: %d\n", tm.DownlinkInSecond, tm.UplinkInSecond)
-		//	} else {
-		//		fmt.Printf("Main-Traffic Monitor: Downlink: %d, Uplink: %d\n", tm.DownlinkInSecond, tm.UplinkInSecond)
-		//	}
-		//}
-		select {
-		case <-tm.BreakSignal:
-			return
-		case <-time.After(time.Second):
-			continue
+	go func() {
+		for {
+			tm.DownlinkInSecond = tm.DownlinkRecord
+			tm.UplinkInSecond = tm.UplinkRecord
+			tm.DownlinkRecord = 0
+			tm.UplinkRecord = 0
+			select {
+			case <-tm.BreakSignal:
+				return
+			case <-time.After(time.Second):
+				continue
+			}
 		}
-	}
+	}()
 }
 func (tm *TrafficMonitor) Stop() {
 	tm.BreakSignal <- true
@@ -100,7 +95,7 @@ func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	uid := uuid.New().String()
 	proxy.Links[uid] = &link
 	link.Traffic.ParentTrafficMonitor = proxy.Traffic
-	go link.Traffic.Start()
+	link.Traffic.Start()
 	brokenSignal := make(chan bool)
 	link.BrokenSignal = &brokenSignal
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
@@ -170,7 +165,7 @@ func StartProxyServer() (success bool) {
 		}
 		proxy.Listener = listener
 		ProxyManager[proxyAddressRecord.UUID] = proxy
-		go proxy.Traffic.Start()
+		proxy.Traffic.Start()
 		fmt.Printf("[%s]Proxying started on %s\n", proxyAddressRecord.Name, proxyAddressRecord.LocalAddress)
 		go func(proxyAddressRecord *config.ProxyAddressRecord, proxy *Proxy) {
 			for {

@@ -10,7 +10,10 @@ import (
 	"sort"
 )
 
-func GetProxy(ctx *gin.Context) {
+func GetProxyList(ctx *gin.Context) {
+	ctx.JSON(200, config.Cfg.Proxy)
+}
+func CreateProxy(ctx *gin.Context) {
 	proxyData := config.ProxyAddressRecord{}
 	err := ctx.BindJSON(&proxyData)
 	if err != nil {

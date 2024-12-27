@@ -1,17 +1,10 @@
 <script setup lang="ts">
-import axios from 'axios';
 import { Plus, Refresh } from '@element-plus/icons-vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import TrafficChart from './components/trafficChart.vue';
-let devMode = true;
-if (import.meta.env.MODE === 'production') {
-  devMode = false;
-}
-const axiosInstance = axios.create({
-  baseURL: devMode ? 'http://127.0.0.1:8080/api' : '../api',
-  timeout: 3000,
-});
+import Links from './components/links.vue';
+import { axiosInstance } from './utils/axios';
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
 const proxyTrafficChartRefs = ref<any>({});
@@ -23,9 +16,15 @@ const proxyForm = ref({
   max_link: 0,
   status: true,
 });
+const linksPage = ref();
 onMounted(() => {
   getProxyList();
-})
+});
+onUnmounted(() => {
+  if (refreshProxyTrafficTimer.value != 0) {
+    clearInterval(refreshProxyTrafficTimer.value);
+  }
+});
 const createProxyForm = () => {
   showProxyForm.value = true;
   proxyForm.value = {
@@ -202,11 +201,14 @@ const refreshProxyTrafficData = () => {
     Object.entries(response.data).forEach(([key, data]) => {
       if (proxyTrafficChartRefs.value[key]) {
         const trafficData: any = data as object
-        proxyTrafficChartRefs.value[key].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second,trafficData.downlink_total,trafficData.uplink_total);
+        proxyTrafficChartRefs.value[key].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second, trafficData.downlink_total, trafficData.uplink_total);
       }
       proxyTrafficData.value[key] = data;
     });
   });
+}
+const showLinks = (uuid: string, name: string, maxLink: number) => {
+  linksPage.value.showLinksPage(uuid, name, maxLink);
 }
 </script>
 
@@ -226,8 +228,10 @@ const refreshProxyTrafficData = () => {
         <el-table-column prop="remote_address" label="远程端口" min-width="150" />
         <el-table-column label="连接数" min-width="100">
           <template #default="scope">
-            {{ proxyTrafficData[scope.row.uuid] ? proxyTrafficData[scope.row.uuid].link_count : 0 }} / {{ scope.row.max_link
-              == 0 ? '无限制' : scope.row.max_link }}
+            <el-link @click="showLinks(scope.row.uuid, scope.row.name, scope.row.max_link)" type="warning">
+              {{ proxyTrafficData[scope.row.uuid] ? proxyTrafficData[scope.row.uuid].link_count : 0 }}</el-link> / {{
+                scope.row.max_link
+                  == 0 ? '无限制' : scope.row.max_link }}
           </template>
         </el-table-column>
         <el-table-column label="网络" min-width="150">
@@ -285,6 +289,7 @@ const refreshProxyTrafficData = () => {
         </div>
       </template>
     </el-dialog>
+    <Links ref="linksPage" />
   </div>
 </template>
 

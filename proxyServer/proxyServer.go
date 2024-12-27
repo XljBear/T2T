@@ -62,12 +62,18 @@ func (tm *TrafficMonitor) Uplink(traffic uint64) {
 }
 
 type Link struct {
-	Conn     net.Conn
-	Start    time.Time
-	RemoteIP string
-	Proxy    *Proxy
-	Traffic  *TrafficMonitor
+	Conn         net.Conn
+	Start        time.Time
+	RemoteIP     string
+	Proxy        *Proxy
+	Traffic      *TrafficMonitor
+	BrokenSignal *chan bool
 }
+
+func (link *Link) Close() {
+	*link.BrokenSignal <- true
+}
+
 type Proxy struct {
 	Listener net.Listener
 	MaxLink  uint
@@ -96,6 +102,7 @@ func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	link.Traffic.ParentTrafficMonitor = proxy.Traffic
 	go link.Traffic.Start()
 	brokenSignal := make(chan bool)
+	link.BrokenSignal = &brokenSignal
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
 	go proxyTransform(localConn, remoteConn, link.Traffic, "Uplink", brokenSignal)
 	<-brokenSignal

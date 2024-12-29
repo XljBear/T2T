@@ -148,9 +148,9 @@ func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, 
 			return
 		}
 		if trafficType == "Downlink" {
-			trafficMonitor.Downlink(uint64(bytesRead))
+			go trafficMonitor.Downlink(uint64(bytesRead))
 		} else if trafficType == "Uplink" {
-			trafficMonitor.Uplink(uint64(bytesRead))
+			go trafficMonitor.Uplink(uint64(bytesRead))
 		}
 		_, err = dst.Write(buffer[:bytesRead])
 		if err != nil {

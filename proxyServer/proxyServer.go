@@ -10,6 +10,7 @@ import (
 )
 
 type TrafficMonitor struct {
+	Lock          sync.Mutex
 	DownlinkTotal uint64
 	UplinkTotal   uint64
 
@@ -26,10 +27,12 @@ func (tm *TrafficMonitor) Start() {
 	tm.BreakSignal = make(chan bool)
 	go func() {
 		for {
+			tm.Lock.Lock()
 			tm.DownlinkInSecond = tm.DownlinkRecord
 			tm.UplinkInSecond = tm.UplinkRecord
 			tm.DownlinkRecord = 0
 			tm.UplinkRecord = 0
+			tm.Lock.Unlock()
 			select {
 			case <-tm.BreakSignal:
 				return
@@ -43,21 +46,26 @@ func (tm *TrafficMonitor) Stop() {
 	tm.BreakSignal <- true
 }
 func (tm *TrafficMonitor) Downlink(traffic uint64) {
+	tm.Lock.Lock()
 	tm.DownlinkRecord += traffic
 	tm.DownlinkTotal += traffic
+	tm.Lock.Unlock()
 	if tm.ParentTrafficMonitor != nil {
 		tm.ParentTrafficMonitor.Downlink(traffic)
 	}
 }
 func (tm *TrafficMonitor) Uplink(traffic uint64) {
+	tm.Lock.Lock()
 	tm.UplinkRecord += traffic
 	tm.UplinkTotal += traffic
+	tm.Lock.Unlock()
 	if tm.ParentTrafficMonitor != nil {
 		tm.ParentTrafficMonitor.Uplink(traffic)
 	}
 }
 
 type Link struct {
+	UUID       string
 	Conn       net.Conn
 	Start      time.Time
 	RemoteIP   string
@@ -71,15 +79,44 @@ func (link *Link) Close() {
 }
 
 type Proxy struct {
-	UUID          string
-	Name          string
-	LocalAddress  string
-	RemoteAddress string
-	Listener      net.Listener
-	MaxLink       uint
-	Links         sync.Map
-	LinksCount    uint
-	Traffic       *TrafficMonitor
+	UUID           string
+	Name           string
+	LocalAddress   string
+	RemoteAddress  string
+	Listener       net.Listener
+	MaxLink        uint
+	Links          sync.Map
+	LinksCount     uint
+	LinksCountLock sync.Mutex
+	Traffic        *TrafficMonitor
+}
+
+func (proxy *Proxy) AddLink(localConn net.Conn, remoteAddr string) *Link {
+	uid := uuid.New().String()
+	link := Link{
+		UUID:     uid,
+		Start:    time.Now(),
+		Conn:     localConn,
+		RemoteIP: remoteAddr,
+		Proxy:    proxy,
+		Traffic:  &TrafficMonitor{},
+	}
+	proxy.Links.Store(uid, &link)
+	proxy.LinksCountLock.Lock()
+	proxy.LinksCount++
+	proxy.LinksCountLock.Unlock()
+	link.Traffic.ParentTrafficMonitor = proxy.Traffic
+	link.Traffic.Start()
+	exitSignal := make(chan bool)
+	link.ExitSignal = &exitSignal
+	return &link
+}
+func (proxy *Proxy) ReleaseLink(link *Link) {
+	link.Traffic.Stop()
+	proxy.Links.Delete(link.UUID)
+	proxy.LinksCountLock.Lock()
+	proxy.LinksCount--
+	proxy.LinksCountLock.Unlock()
 }
 
 var ProxyManager map[string]*Proxy
@@ -91,30 +128,15 @@ func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 		panic(err)
 	}
 	remoteTcpAddr := localConn.RemoteAddr().(*net.TCPAddr)
-	link := Link{
-		Start:    time.Now(),
-		Conn:     localConn,
-		RemoteIP: remoteTcpAddr.IP.String(),
-		Proxy:    proxy,
-		Traffic:  &TrafficMonitor{},
-	}
-	uid := uuid.New().String()
-	proxy.Links.Store(uid, &link)
-	proxy.LinksCount++
-	link.Traffic.ParentTrafficMonitor = proxy.Traffic
-	link.Traffic.Start()
+	link := proxy.AddLink(localConn, remoteTcpAddr.IP.String())
 	brokenSignal := make(chan bool)
-	exitSignal := make(chan bool)
-	link.ExitSignal = &exitSignal
 	go proxyTransform(remoteConn, localConn, link.Traffic, "Downlink", brokenSignal)
 	go proxyTransform(localConn, remoteConn, link.Traffic, "Uplink", brokenSignal)
 	select {
 	case <-brokenSignal:
-	case <-exitSignal:
+	case <-*link.ExitSignal:
 	}
-	link.Traffic.Stop()
-	proxy.Links.Delete(uid)
-	proxy.LinksCount--
+	proxy.ReleaseLink(link)
 	remoteConn.Close()
 }
 func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, trafficType string, brokenSignal chan bool) {

@@ -1,19 +1,19 @@
 .PHONY : mac windows linux linux_arm all mkdir run web
 mac: prepare
-	 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Mac/T2T main.go
+	 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Mac/T2T .
 
 windows: prepare
 	go generate
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Windows/T2T.exe ./
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Windows/T2T.exe .
 
 linux: prepare
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Linux/T2T main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Linux/T2T .
 
 linux_arm: prepare
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Linux_Arm/T2T main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -trimpath -o ./build/T2T_Linux_Arm/T2T .
 
 run:
-	go run main.go
+	go run .
 all: mac windows linux linux_arm
 
 web:

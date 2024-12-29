@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import moment from 'moment';
 import TrafficChart from './trafficChart.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -37,8 +37,10 @@ const showLinksPage = (uuid: string, name: string, maxLink: number) => {
     refreshLinks();
     linksDataRefreshTimer.value = setInterval(refreshLinks, 1500);
 }
-onUnmounted(() => {
-    clearInterval(linksDataRefreshTimer.value);
+watch(() => dialogTableVisible.value, (show: boolean) => {
+    if (!show) {
+        clearInterval(linksDataRefreshTimer.value);
+    }
 });
 const proxyLinksData = ref<any>([]);
 const refreshLinks = () => {
@@ -83,7 +85,8 @@ defineExpose({ showLinksPage })
 </script>
 <template>
     <el-dialog draggable v-model="dialogTableVisible"
-        :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink})`" width="100%" style="max-width:800px">
+        :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink == 0 ? '无限制' : proxyMaxLink})`" width="100%"
+        style="max-width:800px">
         <el-table :data="proxyLinksData" width="100%">
             <el-table-column fixed="left" prop="ip" label="IP地址" />
             <el-table-column label="连接时长" min-width="120">

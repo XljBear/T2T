@@ -23,8 +23,7 @@ func LoginAuth() gin.HandlerFunc {
 			return
 		}
 		loginSessionKey := "l_" + tokenCookie.Value
-		_, exist := storages.StorageInstance.Get(loginSessionKey)
-		if !exist {
+		if !storages.StorageInstance.Exists(loginSessionKey) {
 			ctx.JSON(401, gin.H{
 				"error": "Unauthorized",
 			})

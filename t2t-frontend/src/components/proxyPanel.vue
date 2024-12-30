@@ -2,8 +2,9 @@
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { onMounted, ref, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import TrafficChart from '../components/trafficChart.vue';
-import Links from '../components/links.vue';
+import TrafficChart from './trafficChart.vue';
+import Links from './links.vue';
+import Setting from './setting.vue';
 import { axiosInstance } from '../utils/axios';
 import { useLoginStore } from '../stores/login';
 const loginStore = useLoginStore();
@@ -19,6 +20,7 @@ const proxyForm = ref({
     status: true,
 });
 const linksPage = ref();
+const settingPage = ref();
 onMounted(() => {
     getProxyList();
 });
@@ -213,6 +215,9 @@ const refreshProxyTrafficData = () => {
 const showLinks = (uuid: string, name: string, maxLink: number) => {
     linksPage.value.showLinksPage(uuid, name, maxLink);
 }
+const showSetting = () => {
+    settingPage.value.showSettingDialog();
+}
 const logout = () => {
     ElMessageBox.confirm(
         '确定要退出登录吗？',
@@ -257,7 +262,8 @@ const logout = () => {
                 </el-table-column>
                 <el-table-column label="网络" min-width="200">
                     <template #default="scope">
-                        <TrafficChart :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el" class="tChart" />
+                        <TrafficChart :key="scope.row.uuid" :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el"
+                            class="tChart" />
                     </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -279,7 +285,8 @@ const logout = () => {
                 </template>
             </el-table>
             <template #footer>
-                <div class="logout">
+                <div class="systemAction">
+                    <el-button type="primary" link @click="showSetting">系统设置</el-button>
                     <el-button type="danger" link @click="logout">退出登录</el-button>
                 </div>
                 <div class="card-footer">T2T Server v0.0.1 © StupidBear Studio 2024</div>
@@ -314,6 +321,7 @@ const logout = () => {
             </template>
         </el-dialog>
         <Links ref="linksPage" />
+        <Setting ref="settingPage" />
     </div>
 </template>
 
@@ -335,7 +343,7 @@ const logout = () => {
         font-size: 12px;
     }
 
-    .logout {
+    .systemAction {
         margin-bottom: 5px;
     }
 

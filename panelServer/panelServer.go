@@ -2,7 +2,6 @@ package panelServer
 
 import (
 	"T2T/panelServer/routers"
-	"T2T/panelServer/storages"
 	"embed"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -10,13 +9,13 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"time"
 )
 
 //go:embed dist
 var FrontendDir embed.FS
 
-func StartPanelServer(panelListenAddress string) {
-
+func StartPanelServer(panelListenAddress string) bool {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
 	r := gin.Default()
@@ -27,8 +26,21 @@ func StartPanelServer(panelListenAddress string) {
 		ctx.Redirect(302, "/panel")
 	})
 	routers.RegisterApiRouter(r)
-	storages.Init()
-	defer storages.Release()
-	fmt.Println("Panel server is running on " + panelListenAddress)
-	r.Run(panelListenAddress)
+	fmt.Println("Panel server is Starting on " + panelListenAddress)
+	var broken chan bool
+	broken = make(chan bool, 1)
+
+	go func() {
+		err := r.Run(panelListenAddress)
+		if err != nil {
+			fmt.Printf("Panel server start with error: (%v)\n", err)
+		}
+		broken <- true
+	}()
+	select {
+	case <-broken:
+		return false
+	case <-time.After(time.Second * 3):
+		return true
+	}
 }

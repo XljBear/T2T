@@ -1,6 +1,7 @@
 package storages
 
 import (
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,6 +36,19 @@ func (s *Storage) Delete(key string) {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 	delete(s.Data, key)
+}
+func (s *Storage) Exists(key string) bool {
+	_, ok := s.Data[key]
+	return ok
+}
+func (s *Storage) DeleteWithPrefix(prefix string) {
+	s.Lock.Lock()
+	defer s.Lock.Unlock()
+	for key := range s.Data {
+		if strings.HasPrefix(key, prefix) {
+			delete(s.Data, key)
+		}
+	}
 }
 func (s *Storage) Clean() {
 	s.Lock.Lock()

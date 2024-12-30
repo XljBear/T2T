@@ -3,22 +3,35 @@ package main
 import (
 	"T2T/config"
 	"T2T/panelServer"
+	"T2T/panelServer/storages"
 	"T2T/proxyServer"
+	"fmt"
 	"time"
 )
 
 func main() {
 
 	config.Init()
+	storages.Init()
+	defer storages.Release()
 
-	success := proxyServer.StartProxyServer()
+	proxySuccess := proxyServer.StartProxyServer()
+
+	var panelSuccess bool
 	if config.Cfg.EnablePanel {
-		panelServer.StartPanelServer(config.Cfg.PanelListenAddress)
-	} else if !success {
+		panelSuccess = panelServer.StartPanelServer(config.Cfg.PanelListenAddress)
+		if panelSuccess {
+			fmt.Println("Panel server started successfully")
+		} else {
+			fmt.Println("Panel server failed to start")
+		}
+	}
+
+	if !proxySuccess && !panelSuccess {
 		return
 	}
 
 	for {
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 100)
 	}
 }

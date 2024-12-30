@@ -20,4 +20,5 @@ func RegisterApiRouter(app *gin.Engine) {
 	app.GET("/api/traffic", handles.GetTraffic)
 	app.GET("/api/proxy/:uuid/links", handles.GetLinks)
 	app.DELETE("/api/proxy/:uuid/links/:link_uuid", handles.KickProxyServer)
+	app.POST("/api/setting", handles.UpdateSetting)
 }

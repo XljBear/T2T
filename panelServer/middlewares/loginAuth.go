@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"T2T/panelServer/storages"
+	"T2T/storages"
 	"github.com/gin-gonic/gin"
 )
 

@@ -3,8 +3,8 @@ package main
 import (
 	"T2T/config"
 	"T2T/panelServer"
-	"T2T/panelServer/storages"
 	"T2T/proxyServer"
+	"T2T/storages"
 	"fmt"
 	"time"
 )

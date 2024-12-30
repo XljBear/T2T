@@ -1,7 +1,7 @@
 package handles
 
 import (
-	"T2T/panelServer/storages"
+	"T2T/storages"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

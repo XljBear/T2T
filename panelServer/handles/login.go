@@ -2,7 +2,7 @@ package handles
 
 import (
 	"T2T/config"
-	"T2T/panelServer/storages"
+	"T2T/storages"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/wenlng/go-captcha/v2/click"

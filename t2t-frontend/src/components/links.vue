@@ -56,6 +56,7 @@ const refreshLinks = () => {
                 proxyTrafficChartRefs.value[data.uuid].pushTrafficData(trafficData.downlink_in_second, trafficData.uplink_in_second, trafficData.downlink_total, trafficData.uplink_total);
             }
         });
+    }).catch(() => {
     });
 }
 const kickLink = (uuid: string) => {

@@ -18,6 +18,7 @@ type Config struct {
 	Proxy              []ProxyAddressRecord `mapstructure:"proxy" yaml:"proxy" json:"proxy"`
 	EnablePanel        bool                 `mapstructure:"enable_panel" yaml:"enable_panel" json:"enable_panel"`
 	PanelListenAddress string               `mapstructure:"panel_listen_address" yaml:"panel_listen_address" json:"panel_listen_address"`
+	PanelPassword      string               `mapstructure:"panel_password" yaml:"panel_password" json:"panel_password"`
 }
 
 const configFileName = "proxy"
@@ -56,6 +57,7 @@ func CreateDefaultConfig() error {
 	viper.Set("proxy", paList)
 	viper.Set("enable_panel", true)
 	viper.Set("panel_listen_address", ":8080")
+	viper.Set("panel_password", "admin")
 	err = viper.WriteConfig()
 	if err != nil {
 		return err

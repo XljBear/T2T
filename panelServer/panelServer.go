@@ -2,6 +2,7 @@ package panelServer
 
 import (
 	"T2T/panelServer/routers"
+	"T2T/panelServer/storages"
 	"embed"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -26,6 +27,8 @@ func StartPanelServer(panelListenAddress string) {
 		ctx.Redirect(302, "/panel")
 	})
 	routers.RegisterApiRouter(r)
+	storages.Init()
+	defer storages.Release()
 	fmt.Println("Panel server is running on " + panelListenAddress)
 	r.Run(panelListenAddress)
 }

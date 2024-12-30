@@ -469,6 +469,11 @@
     de-indent "^1.0.2"
     he "^1.2.0"
 
+"@vue/devtools-api@^6.6.3":
+  version "6.6.4"
+  resolved "https://registry.npmmirror.com/@vue/devtools-api/-/devtools-api-6.6.4.tgz#cbe97fe0162b365edc1dba80e173f90492535343"
+  integrity sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==
+
 "@vue/language-core@2.1.10":
   version "2.1.10"
   resolved "https://registry.npmmirror.com/@vue/language-core/-/language-core-2.1.10.tgz#5988e9ea155f3e09ccbbb3b2a0ddd530dad912e6"
@@ -725,6 +730,11 @@ fsevents@~2.3.2, fsevents@~2.3.3:
   resolved "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
+go-captcha-vue@^2:
+  version "2.0.5"
+  resolved "https://registry.npmmirror.com/go-captcha-vue/-/go-captcha-vue-2.0.5.tgz#e069d08d655ff5e99fe904ce5cc6b1c483719388"
+  integrity sha512-AWZ5tbiR434lmc9dQ3ifLuV16qe8SGeFBZiAg3Fwq6hkRYEowiAxfZhygbaNPWQGuHr1EcUZNZncYwl+rs2B4g==
+
 he@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmmirror.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
@@ -846,6 +856,14 @@ picomatch@^2.3.1:
   resolved "https://registry.npmmirror.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
+pinia@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.npmmirror.com/pinia/-/pinia-2.3.0.tgz#b81f4ac7da1031af8d8f7007686c4b2799a55b9f"
+  integrity sha512-ohZj3jla0LL0OH5PlLTDMzqKiVw2XARmC1XYLdLWIPBMdhDW/123ZWr4zVAhtJm+aoSkFa13pYXskAvAscIkhQ==
+  dependencies:
+    "@vue/devtools-api" "^6.6.3"
+    vue-demi "^0.14.10"
+
 postcss@^8.4.48, postcss@^8.4.49:
   version "8.4.49"
   resolved "https://registry.npmmirror.com/postcss/-/postcss-8.4.49.tgz#4ea479048ab059ab3ae61d082190fabfd994fe19"
@@ -947,7 +965,7 @@ vscode-uri@^3.0.8:
   resolved "https://registry.npmmirror.com/vscode-uri/-/vscode-uri-3.0.8.tgz#1770938d3e72588659a172d0fd4642780083ff9f"
   integrity sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==
 
-vue-demi@*:
+vue-demi@*, vue-demi@^0.14.10:
   version "0.14.10"
   resolved "https://registry.npmmirror.com/vue-demi/-/vue-demi-0.14.10.tgz#afc78de3d6f9e11bf78c55e8510ee12814522f04"
   integrity sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==

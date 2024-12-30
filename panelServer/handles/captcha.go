@@ -2,17 +2,15 @@ package handles
 
 import (
 	"T2T/storages"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/wenlng/go-captcha-assets/resources/images"
 	"github.com/wenlng/go-captcha-assets/resources/shapes"
 	"github.com/wenlng/go-captcha/v2/click"
-	"log"
 	"time"
 )
 
-var textCapt click.Captcha
+var shapeCapt click.Captcha
 
 func Captcha(ctx *gin.Context) {
 	type CaptchaData struct {
@@ -23,34 +21,40 @@ func Captcha(ctx *gin.Context) {
 	builder := click.NewBuilder()
 	shapeMaps, err := shapes.GetShapes()
 	if err != nil {
-		log.Fatalln(err)
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	imgs, err := images.GetImages()
 	if err != nil {
-		log.Fatalln(err)
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	builder.SetResources(
 		click.WithShapes(shapeMaps),
 		click.WithBackgrounds(imgs),
 	)
-	textCapt = builder.MakeWithShape()
-	captData, err := textCapt.Generate()
+	shapeCapt = builder.MakeWithShape()
+	captData, err := shapeCapt.Generate()
 	if err != nil {
-		log.Fatalln(err)
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	dotData := captData.GetData()
 	if dotData == nil {
-		log.Fatalln(">>>>> generate err")
+		ctx.JSON(500, gin.H{"error": "Captcha generate failed"})
+		return
 	}
 
 	var mBase64, tBase64 string
 	mBase64, err = captData.GetMasterImage().ToBase64()
 	if err != nil {
-		fmt.Println(err)
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	tBase64, err = captData.GetThumbImage().ToBase64()
 	if err != nil {
-		fmt.Println(err)
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	capt := CaptchaData{
 		CaptchaID: uuid.New().String(),

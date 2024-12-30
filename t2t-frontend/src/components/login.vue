@@ -33,6 +33,7 @@ const captchaConfirm = (dots: Array<ClickDot>, reset: () => void) => {
     captcha_data: dots
   }).then(res => {
     loginStore.login(res.data.token);
+    reset();
   }).catch(err => {
     switch (err.response.data.error) {
       case 'Invalid request data':
@@ -53,8 +54,9 @@ const captchaConfirm = (dots: Array<ClickDot>, reset: () => void) => {
         ElMessage.error(err.response.data.error);
         break;
     };
-    reset();
     refreshCaptcha();
+  }).finally(() => {
+    reset();
   });
 };
 const showCaptcha = () => {

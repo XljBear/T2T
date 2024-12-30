@@ -73,7 +73,8 @@ const showCaptcha = () => {
       <div class="loginForm">
         <el-form label-width="auto" :model="loginForm" style="max-width: 600px">
           <el-form-item label="管理密码:" label-position="right">
-            <el-col :span="16"><el-input type="password" v-model="loginForm.password" /></el-col>
+            <el-col :span="16"><el-input type="password" placeholder="请输入管理密码" v-model="loginForm.password" clearable
+                show-password /></el-col>
             <el-col :span="8"><el-button type="primary" @click="showCaptcha">登录</el-button></el-col>
           </el-form-item>
         </el-form>

@@ -57,11 +57,13 @@ defineExpose({ showSettingDialog });
     <el-dialog draggable v-model="dialogSettingVisible" title="系统设置" width="100%" style="max-width:500px">
         <el-form :model="settingForm">
             <el-form-item label="面板管理密码:" :label-width="120">
-                <el-input type="password" v-model="settingForm.panel_password" autocomplete="off" />
+                <el-input placeholder="请输入新的管理密码，可留空" type="password" v-model="settingForm.panel_password"
+                    autocomplete="off" clearable show-password />
                 <el-text class="mx-1" type="warning">保持默认为不修改密码</el-text>
             </el-form-item>
             <el-form-item v-show="settingForm.panel_password != secretPassword" label="重复输入密码:" :label-width="120">
-                <el-input type="password" v-model="settingForm.repeat_panel_password" autocomplete="off" />
+                <el-input placeholder="请再次输入相同密码" type="password" v-model="settingForm.repeat_panel_password"
+                    autocomplete="off" clearable show-password />
             </el-form-item>
         </el-form>
         <el-button type="primary" @click="updateSetting">保存设置</el-button>

@@ -2,8 +2,8 @@ package handles
 
 import (
 	"T2T/config"
+	"T2T/panelServer/structs"
 	"T2T/proxyServer"
-	"T2T/proxyServer/structs"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"

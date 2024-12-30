@@ -4,7 +4,6 @@ import (
 	"T2T/panelServer/routers"
 	"embed"
 	"fmt"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"io"
 	"io/fs"
@@ -19,7 +18,6 @@ func StartPanelServer(panelListenAddress string) bool {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
 	r := gin.Default()
-	r.Use(cors.Default())
 	frontendFs, _ := fs.Sub(FrontendDir, "dist")
 	r.StaticFS("/panel", http.FS(frontendFs))
 	r.GET("/", func(ctx *gin.Context) {

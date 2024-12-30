@@ -56,7 +56,8 @@ func (s *Storage) Clean() {
 	s.Data = make(map[string]*StorageData)
 }
 func (s *Storage) Init() {
-	s.Data = make(map[string]*StorageData)
+	s.Clean()
+	s.ReleaseSignal = make(chan bool)
 	go func() {
 		for {
 			for k, v := range s.Data {

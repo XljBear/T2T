@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"sync"
 
 	"github.com/spf13/viper"
 )
@@ -13,17 +14,21 @@ type ProxyAddressRecord struct {
 	Name          string `mapstructure:"name" yaml:"name" json:"name"`
 	Status        bool   `mapstructure:"status" yaml:"status" json:"status"`
 	MaxLink       uint   `mapstructure:"max_link" yaml:"max_link" json:"max_link"`
+	TotalDownlink uint64 `mapstructure:"total_downlink" yaml:"total_downlink" json:"total_downlink"`
+	TotalUplink   uint64 `mapstructure:"total_uplink" yaml:"total_uplink" json:"total_uplink"`
 }
 type Config struct {
 	Proxy              []ProxyAddressRecord `mapstructure:"proxy" yaml:"proxy" json:"proxy"`
 	EnablePanel        bool                 `mapstructure:"enable_panel" yaml:"enable_panel" json:"enable_panel"`
 	PanelListenAddress string               `mapstructure:"panel_listen_address" yaml:"panel_listen_address" json:"panel_listen_address"`
 	PanelPassword      string               `mapstructure:"panel_password" yaml:"panel_password" json:"panel_password"`
+	CaptchaType        uint                 `mapstructure:"captcha_type" yaml:"captcha_type" json:"captcha_type"`
 }
 
 const configFileName = "proxy"
 
 var Cfg = Config{}
+var cfgLock sync.Mutex
 
 func Init() {
 	Cfg = Config{}
@@ -58,9 +63,52 @@ func CreateDefaultConfig() error {
 	viper.Set("enable_panel", true)
 	viper.Set("panel_listen_address", ":8080")
 	viper.Set("panel_password", "admin")
+	viper.Set("captcha_type", 1)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func SaveProxy() error {
+	cfgLock.Lock()
+	defer cfgLock.Unlock()
+	viper.Set("proxy", Cfg.Proxy)
+	err := viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func FindProxyByUUID(uuid string) *ProxyAddressRecord {
+	for i, proxy := range Cfg.Proxy {
+		if proxy.UUID == uuid {
+			return &Cfg.Proxy[i]
+		}
+	}
+	return nil
+}
+
+func findProxyIndex(uuid string) int {
+	for i, proxy := range Cfg.Proxy {
+		if proxy.UUID == uuid {
+			return i
+		}
+	}
+	return -1
+}
+
+func DeleteProxyByUUID(uuid string) bool {
+	deleteIndex := findProxyIndex(uuid)
+	if deleteIndex < 0 || deleteIndex >= len(Cfg.Proxy) {
+		return false
+	}
+	Cfg.Proxy = append(Cfg.Proxy[:deleteIndex], Cfg.Proxy[deleteIndex+1:]...)
+	err := SaveProxy()
+	if err != nil {
+		return false
+	}
+	return true
 }

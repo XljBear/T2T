@@ -6,7 +6,7 @@ import (
 	"T2T/proxyServer"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
+	"net/http"
 	"sort"
 )
 
@@ -17,23 +17,21 @@ func CreateProxy(ctx *gin.Context) {
 	proxyData := config.ProxyAddressRecord{}
 	err := ctx.BindJSON(&proxyData)
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if proxyData.LocalAddress == "" || proxyData.RemoteAddress == "" || proxyData.Name == "" {
-		ctx.JSON(400, gin.H{"error": "LocalAddress, RemoteAddress and Name are required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "LocalAddress, RemoteAddress and Name are required"})
 		return
 	}
 	for _, proxy := range config.Cfg.Proxy {
 		if proxy.LocalAddress == proxyData.LocalAddress && proxy.RemoteAddress == proxyData.RemoteAddress {
-			ctx.JSON(400, gin.H{"error": "Proxy already exists"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Proxy already exists"})
 			return
 		}
 	}
 	proxyData.UUID = uuid.New().String()
-	config.Cfg.Proxy = append(config.Cfg.Proxy, proxyData)
-	viper.Set("proxy", config.Cfg.Proxy)
-	err = viper.WriteConfig()
+	err = config.SaveProxy()
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -44,27 +42,30 @@ func CreateProxy(ctx *gin.Context) {
 func UpdateProxy(ctx *gin.Context) {
 	uuidStr := ctx.Param("uuid")
 	if uuidStr == "" {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
 	updateData := config.ProxyAddressRecord{}
 	err := ctx.BindJSON(&updateData)
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if updateData.LocalAddress == "" || updateData.RemoteAddress == "" || updateData.Name == "" {
-		ctx.JSON(400, gin.H{"error": "LocalAddress, RemoteAddress and Name are required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "LocalAddress, RemoteAddress and Name are required"})
 		return
 	}
-	updateIndex := findProxyIndex(uuidStr)
-	if updateIndex < 0 || updateIndex >= len(config.Cfg.Proxy) {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+	proxy := config.FindProxyByUUID(uuidStr)
+	if proxy == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
-	config.Cfg.Proxy[updateIndex] = updateData
-	viper.Set("proxy", config.Cfg.Proxy)
-	err = viper.WriteConfig()
+	proxy.Name = updateData.Name
+	proxy.LocalAddress = updateData.LocalAddress
+	proxy.RemoteAddress = updateData.RemoteAddress
+	proxy.MaxLink = updateData.MaxLink
+	proxy.Status = updateData.Status
+	err = config.SaveProxy()
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -75,36 +76,20 @@ func UpdateProxy(ctx *gin.Context) {
 func DeleteProxy(ctx *gin.Context) {
 	deleteUUIDStr := ctx.Param("uuid")
 	if deleteUUIDStr == "" {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
-	deleteIndex := findProxyIndex(deleteUUIDStr)
-	if deleteIndex < 0 || deleteIndex >= len(config.Cfg.Proxy) {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
-		return
-	}
-	config.Cfg.Proxy = append(config.Cfg.Proxy[:deleteIndex], config.Cfg.Proxy[deleteIndex+1:]...)
-	viper.Set("proxy", config.Cfg.Proxy)
-	err := viper.WriteConfig()
-	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+	success := config.DeleteProxyByUUID(deleteUUIDStr)
+	if !success {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
 	ctx.JSON(200, gin.H{})
 }
 
-func findProxyIndex(uuid string) int {
-	for i, proxy := range config.Cfg.Proxy {
-		if proxy.UUID == uuid {
-			return i
-		}
-	}
-	return -1
-}
-
 func RestartProxyServer(ctx *gin.Context) {
 	config.Init()
-	proxyServer.StartProxyServer()
+	proxyServer.ProxyServerInstance.Start()
 	ctx.JSON(200, gin.H{})
 }
 
@@ -118,7 +103,7 @@ func GetTraffic(ctx *gin.Context) {
 	}
 	var traffic map[string]trafficData
 	traffic = make(map[string]trafficData)
-	for UUID, proxy := range proxyServer.ProxyManager {
+	for UUID, proxy := range proxyServer.ProxyServerInstance.ProxyManager {
 		traffic[UUID] = trafficData{
 			DownlinkInSecond: proxy.Traffic.DownlinkInSecond,
 			DownlinkTotal:    proxy.Traffic.DownlinkTotal,
@@ -135,14 +120,14 @@ func GetLinks(ctx *gin.Context) {
 
 	uuidStr := ctx.Param("uuid")
 	if uuidStr == "" {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
-	if _, ok := proxyServer.ProxyManager[uuidStr]; !ok {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+	if _, ok := proxyServer.ProxyServerInstance.ProxyManager[uuidStr]; !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 	}
 
-	proxy := proxyServer.ProxyManager[uuidStr]
+	proxy := proxyServer.ProxyServerInstance.ProxyManager[uuidStr]
 	links = make([]structs.Link, 0)
 	if proxy != nil {
 		for linkUUID, link := range proxy.Links.Range {
@@ -167,27 +152,27 @@ func GetLinks(ctx *gin.Context) {
 func KickProxyServer(ctx *gin.Context) {
 	proxyUUIDStr := ctx.Param("uuid")
 	if proxyUUIDStr == "" {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
-	if _, ok := proxyServer.ProxyManager[proxyUUIDStr]; !ok {
-		ctx.JSON(400, gin.H{"error": "Invalid uuid"})
+	if _, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr]; !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
 		return
 	}
 	linkUUIDStr := ctx.Param("link_uuid")
 	if linkUUIDStr == "" {
-		ctx.JSON(400, gin.H{"error": "Invalid link uuid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid link uuid"})
 		return
 	}
-	if _, ok := proxyServer.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr); !ok {
-		ctx.JSON(400, gin.H{"error": "Invalid link uuid"})
+	if _, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr); !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid link uuid"})
 		return
 	}
-	proxy, ok := proxyServer.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr)
+	proxy, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr)
 	if !ok {
-		ctx.JSON(500, gin.H{"error": "Internal error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal error"})
 		return
 	}
 	proxy.(*proxyServer.Link).Close()
-	ctx.JSON(200, gin.H{})
+	ctx.JSON(http.StatusOK, gin.H{})
 }

@@ -1,36 +1,54 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { axiosInstance } from '../utils/axios';
 import { ElMessage } from 'element-plus';
-import { ClickDot } from 'go-captcha-vue/dist/components/click/meta/data.js';
 import { useLoginStore } from '../stores/login';
 const loginStore = useLoginStore();
 const captchaRef = ref();
 const captchaData = reactive({
   image: '',
   thumb: '',
+  thumbWidth: 0,
+  thumbHeight: 0,
+  thumbX: 0,
+  thumbY: 0,
   captcha_id: '',
+
 });
+const captchaType = ref(0);
 const loginForm = reactive({
   password: '',
+})
+onMounted(() => {
+  axiosInstance.get('/config').then(res => {
+    captchaType.value = res.data.captcha_type;
+  }).catch(() => {
+    ElMessage.error('获取配置参数失败');
+  });
 })
 const dialogCaptchaVisible = ref(false);
 const refreshCaptcha = () => {
   axiosInstance.get('/captcha').then(res => {
     captchaData.image = res.data.captcha;
     captchaData.thumb = res.data.thumb;
+    captchaData.thumbWidth = res.data.thumb_width;
+    captchaData.thumbHeight = res.data.thumb_height;
+    captchaData.thumbX = res.data.thumb_x;
+    captchaData.thumbY = res.data.thumb_y;
     captchaData.captcha_id = res.data.captcha_id;
   });
 };
-const captchaConfirm = (dots: Array<ClickDot>, reset: () => void) => {
-  if (dots.length === 0) {
+const captchaConfirm = (captcha: any, reset: () => void) => {
+  if (captcha.length === 0) {
     ElMessage.warning('请点击图像进行安全验证');
     return;
   }
   axiosInstance.post('/login', {
     captcha_id: captchaData.captcha_id,
     password: loginForm.password,
-    captcha_data: dots
+    click_captcha_data: captchaType.value == 1 || captchaType.value == 2 ? captcha : null,
+    slide_captcha_data: captchaType.value == 3 || captchaType.value == 4 ? captcha : null,
+    rotate_captcha_data: captchaType.value == 5 ? captcha : null,
   }).then(res => {
     loginStore.login(res.data.token);
     reset();
@@ -60,8 +78,37 @@ const captchaConfirm = (dots: Array<ClickDot>, reset: () => void) => {
   });
 };
 const showCaptcha = () => {
-  dialogCaptchaVisible.value = true;
-  refreshCaptcha();
+  if (captchaType.value === 0) {
+    axiosInstance.post('/login', {
+      captcha_id: captchaData.captcha_id,
+      password: loginForm.password
+    }).then(res => {
+      loginStore.login(res.data.token);
+    }).catch(err => {
+      switch (err.response.data.error) {
+        case 'Invalid request data':
+          ElMessage.error('参数错误，请重新尝试');
+          break;
+        case 'Invalid captchaID':
+          ElMessage.error('验证码已失效，请重新尝试');
+          break;
+        case 'Captcha verification failed':
+          ElMessage.error('验证码输入错误，请重新尝试');
+          break;
+        case 'Invalid password':
+          dialogCaptchaVisible.value = false;
+          loginForm.password = '';
+          ElMessage.error('密码错误，请重新输入');
+          return;
+        default:
+          ElMessage.error(err.response.data.error);
+          break;
+      };
+    });
+  } else {
+    dialogCaptchaVisible.value = true;
+    refreshCaptcha();
+  }
 };
 </script>
 <template>
@@ -85,8 +132,14 @@ const showCaptcha = () => {
     </el-card>
     <el-dialog draggable v-model="dialogCaptchaVisible" title="安全验证" width="100%" style="max-width:400px">
       <div class="captcha">
-        <gocaptcha-click :config="{}" :data="captchaData" :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }"
-          ref="captchaRef" />
+        <gocaptcha-click v-if="captchaType == 1 || captchaType == 2" :config="{}" :data="captchaData"
+          :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
+        <gocaptcha-slide v-if="captchaType == 3" :config="{}" :data="captchaData"
+          :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
+        <gocaptcha-slide-region v-if="captchaType == 4" :config="{}" :data="captchaData"
+          :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
+        <gocaptcha-rotate v-if="captchaType == 5" :config="{}" :data="captchaData"
+          :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
       </div>
     </el-dialog>
   </div>

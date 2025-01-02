@@ -8,6 +8,7 @@ import (
 
 func RegisterApiRouter(app *gin.Engine) {
 	app.GET("/api/captcha", handles.Captcha)
+	app.GET("/api/config", handles.GetConfig)
 	app.POST("/api/login", handles.Login)
 	app.POST("/api/logout", handles.Logout)
 

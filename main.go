@@ -15,7 +15,9 @@ func main() {
 	storages.Init()
 	defer storages.Release()
 
-	proxySuccess := proxyServer.StartProxyServer()
+	proxyServer.ProxyServerInstance = &proxyServer.ProxyServer{}
+	proxySuccess := proxyServer.ProxyServerInstance.Start()
+	defer proxyServer.ProxyServerInstance.Stop()
 
 	var panelSuccess bool
 	if config.Cfg.EnablePanel {

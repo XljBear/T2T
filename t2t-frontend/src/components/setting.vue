@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { axiosInstance } from '../utils/axios';
 const dialogSettingVisible = ref(false);
@@ -7,20 +7,29 @@ const secretPassword = "~nononono$y0ucantsee.meme@";
 
 const settingForm = ref({
     panel_password: secretPassword,
-    repeat_panel_password: ""
+    repeat_panel_password: "",
+    captcha_type: 0
 });
 
 const showSettingDialog = () => {
     settingForm.value.panel_password = secretPassword;
     settingForm.value.repeat_panel_password = "";
     dialogSettingVisible.value = true;
+    axiosInstance.get('/config').then(res => {
+        settingForm.value.captcha_type = res.data.captcha_type;
+    }).catch(() => {
+        ElMessage.error('获取配置参数失败');
+    });
 }
-
+onMounted(() => {
+    axiosInstance.get('/config').then(res => {
+        settingForm.value.captcha_type = res.data.captcha_type;
+    }).catch(() => {
+        ElMessage.error('获取配置参数失败');
+    });
+})
 const updateSetting = () => {
-    if (settingForm.value.panel_password == secretPassword) {
-        dialogSettingVisible.value = false;
-        return;
-    } else if (settingForm.value.panel_password != settingForm.value.repeat_panel_password) {
+    if (settingForm.value.panel_password != secretPassword && settingForm.value.panel_password != settingForm.value.repeat_panel_password) {
         ElMessage({
             message: '重复密码输入不正确',
             type: 'warning',
@@ -64,6 +73,16 @@ defineExpose({ showSettingDialog });
             <el-form-item v-show="settingForm.panel_password != secretPassword" label="重复输入密码:" :label-width="120">
                 <el-input placeholder="请再次输入相同密码" type="password" v-model="settingForm.repeat_panel_password"
                     autocomplete="off" clearable show-password />
+            </el-form-item>
+            <el-form-item label="面板登陆验证码:" :label-width="140">
+                <el-radio-group v-model="settingForm.captcha_type">
+                    <el-radio :value="0">关闭</el-radio>
+                    <el-radio :value="1">点选式(文字)</el-radio>
+                    <el-radio :value="2">点选式(图形)</el-radio>
+                    <el-radio :value="3">滑动式</el-radio>
+                    <el-radio :value="4">拖拽式</el-radio>
+                    <el-radio :value="5">旋转拼图</el-radio>
+                </el-radio-group>
             </el-form-item>
         </el-form>
         <el-button type="primary" @click="updateSetting">保存设置</el-button>

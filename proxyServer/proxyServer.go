@@ -119,13 +119,21 @@ func (proxy *Proxy) ReleaseLink(link *Link) {
 	proxy.LinksCountLock.Unlock()
 }
 
-var ProxyManager map[string]*Proxy
+type proxyManager map[string]*Proxy
+
+type ProxyServer struct {
+	ProxyManager proxyManager
+	StopSignal   chan bool
+}
+
+var ProxyServerInstance *ProxyServer
 
 func handleConnection(proxy *Proxy, localConn net.Conn, remoteAddr string) {
 	defer localConn.Close()
 	remoteConn, err := net.Dial("tcp", remoteAddr)
 	if err != nil {
-		panic(err)
+		fmt.Printf("[%s]Error connecting to remote server %s: %s\n", proxy.Name, remoteAddr, err)
+		return
 	}
 	remoteTcpAddr := localConn.RemoteAddr().(*net.TCPAddr)
 	link := proxy.AddLink(localConn, remoteTcpAddr.IP.String())
@@ -159,8 +167,8 @@ func proxyTransform(dst net.Conn, src net.Conn, trafficMonitor *TrafficMonitor, 
 		}
 	}
 }
-func CloseAllProxy() {
-	for _, proxy := range ProxyManager {
+func (pm *proxyManager) CloseAllProxy() {
+	for _, proxy := range *pm {
 		for _, conn := range proxy.Links.Range {
 			conn.(*Link).Traffic.Stop()
 			_ = conn.(*Link).Conn.Close()
@@ -168,14 +176,15 @@ func CloseAllProxy() {
 		proxy.Traffic.Stop()
 		_ = proxy.Listener.Close()
 	}
-	ProxyManager = make(map[string]*Proxy)
+	*pm = make(map[string]*Proxy)
 }
-func StartProxyServer() (success bool) {
-	if len(ProxyManager) != 0 {
+
+func (ps *ProxyServer) Start() (success bool) {
+	if len(ps.ProxyManager) != 0 {
 		fmt.Println("Restarting T2T server")
-		CloseAllProxy()
+		ps.Stop()
 	} else {
-		ProxyManager = make(map[string]*Proxy)
+		ps.ProxyManager = make(map[string]*Proxy)
 		fmt.Println("Starting T2T server")
 	}
 	if len(config.Cfg.Proxy) == 0 {
@@ -193,7 +202,10 @@ func StartProxyServer() (success bool) {
 			RemoteAddress: proxyAddressRecord.RemoteAddress,
 			Links:         sync.Map{},
 			MaxLink:       proxyAddressRecord.MaxLink,
-			Traffic:       &TrafficMonitor{},
+			Traffic: &TrafficMonitor{
+				DownlinkTotal: proxyAddressRecord.TotalDownlink,
+				UplinkTotal:   proxyAddressRecord.TotalUplink,
+			},
 		}
 		fmt.Printf("[%s]Proxying %s to %s\n", proxy.Name, proxy.LocalAddress, proxy.RemoteAddress)
 		listener, err := net.Listen("tcp", proxy.LocalAddress)
@@ -202,7 +214,7 @@ func StartProxyServer() (success bool) {
 			continue
 		}
 		proxy.Listener = listener
-		ProxyManager[proxy.UUID] = &proxy
+		ps.ProxyManager[proxy.UUID] = &proxy
 		proxy.Traffic.Start()
 		fmt.Printf("[%s]Proxying started on %s\n", proxy.Name, proxy.LocalAddress)
 		go func(proxy *Proxy) {
@@ -220,9 +232,38 @@ func StartProxyServer() (success bool) {
 			}
 		}(&proxy)
 	}
-	if len(ProxyManager) == 0 {
+	go func() {
+		for {
+			ps.writeProxyTraffic()
+			select {
+			case <-ps.StopSignal:
+				return
+			case <-time.After(time.Second * 10):
+				continue
+			}
+		}
+	}()
+	if len(ps.ProxyManager) == 0 {
 		fmt.Println("No proxy configured, exiting")
 		return false
 	}
 	return true
+}
+func (ps *ProxyServer) Stop() {
+	ps.ProxyManager.CloseAllProxy()
+	ps.StopSignal <- true
+}
+func (ps *ProxyServer) writeProxyTraffic() {
+	if len(ps.ProxyManager) == 0 {
+		return
+	}
+	for _, proxy := range ps.ProxyManager {
+		proxyCfg := config.FindProxyByUUID(proxy.UUID)
+		if proxyCfg == nil {
+			continue
+		}
+		proxyCfg.TotalDownlink = proxy.Traffic.DownlinkTotal
+		proxyCfg.TotalUplink = proxy.Traffic.UplinkTotal
+		_ = config.SaveProxy()
+	}
 }

@@ -14,8 +14,8 @@ import (
 
 func Login(ctx *gin.Context) {
 	type XYCaptchaData struct {
-		X int `json:"x"`
-		Y int `json:"y"`
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
 	}
 	type loginRequestData struct {
 		Password          string          `json:"password"`

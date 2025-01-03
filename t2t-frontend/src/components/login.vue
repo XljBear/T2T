@@ -135,13 +135,13 @@ const showCaptcha = () => {
     </el-card>
     <el-dialog draggable v-model="dialogCaptchaVisible" title="安全验证" width="100%" style="max-width:400px">
       <div v-loading="captchaLoading" class="captcha">
-        <gocaptcha-click v-if="captchaType == 1 || captchaType == 2" :config="{}" :data="captchaData"
+        <gocaptcha-click v-if="captchaType == 1 || captchaType == 2" :data="captchaData"
           :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
-        <gocaptcha-slide v-if="captchaType == 3" :config="{}" :data="captchaData"
+        <gocaptcha-slide v-if="captchaType == 3" :data="captchaData"
           :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
-        <gocaptcha-slide-region v-if="captchaType == 4" :config="{}" :data="captchaData"
+        <gocaptcha-slide-region v-if="captchaType == 4" :data="captchaData"
           :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
-        <gocaptcha-rotate v-if="captchaType == 5" :config="{}" :data="captchaData"
+        <gocaptcha-rotate v-if="captchaType == 5" :data="captchaData"
           :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
       </div>
     </el-dialog>

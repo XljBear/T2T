@@ -125,6 +125,7 @@ func GetLinks(ctx *gin.Context) {
 	}
 	if _, ok := proxyServer.ProxyServerInstance.ProxyManager[uuidStr]; !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid uuid"})
+		return
 	}
 
 	proxy := proxyServer.ProxyServerInstance.ProxyManager[uuidStr]

@@ -65,6 +65,9 @@ const refreshLinks = () => {
             }
         });
     }).catch(() => {
+        if (linksDataRefreshTimer.value != 0) {
+            clearInterval(linksDataRefreshTimer.value);
+        }
     }).finally(() => {
         if (linksLoading.value) {
             linksLoading.value = false;

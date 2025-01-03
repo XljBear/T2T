@@ -11,6 +11,7 @@ const loginStore = useLoginStore();
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
 const proxyTrafficChartRefs = ref<any>({});
+const proxyLoading = ref(false);
 const proxyForm = ref({
     uuid: '',
     name: '',
@@ -110,6 +111,7 @@ const deleteProxy = (index: number, uuid: string) => {
 }
 const refreshProxyTrafficTimer = ref<number>(0);
 const getProxyList = () => {
+    proxyLoading.value = true;
     if (refreshProxyTrafficTimer.value != 0) {
         clearInterval(refreshProxyTrafficTimer.value);
     }
@@ -120,6 +122,8 @@ const getProxyList = () => {
             refreshProxyTrafficTimer.value = setInterval(refreshProxyTrafficData, 1500);
         }
     }).catch(() => {
+    }).finally(()=>{
+        proxyLoading.value = false;
     });
 }
 const editProxy = (index: number) => {
@@ -247,7 +251,7 @@ const logout = () => {
                     <el-button :icon="Refresh" type="danger" @click="restartService">重启服务</el-button>
                 </div>
             </template>
-            <el-table :data="proxyData" stripe style="width: 100%">
+            <el-table v-loading="proxyLoading" :data="proxyData" stripe style="width: 100%">
                 <el-table-column fixed="left" prop="name" label="名称" />
                 <el-table-column prop="local_address" label="本地端口" min-width="150" />
                 <el-table-column prop="remote_address" label="远程端口" min-width="150" />

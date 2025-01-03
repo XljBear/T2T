@@ -187,6 +187,7 @@ func (ps *ProxyServer) Start() (success bool) {
 		ps.ProxyManager = make(map[string]*Proxy)
 		fmt.Println("Starting T2T server")
 	}
+	ps.StopSignal = make(chan bool)
 	if len(config.Cfg.Proxy) == 0 {
 		fmt.Println("No proxy configured, exiting")
 		return false

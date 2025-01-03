@@ -1,33 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { axiosInstance } from '../utils/axios';
+import { Moon, Sunny } from '@element-plus/icons-vue';
+import { usePanelStore } from '../stores/panel';
+import { useDark } from "@vueuse/core";
+const isDark = useDark();
+const panelStore = usePanelStore();
 const dialogSettingVisible = ref(false);
 const secretPassword = "~nononono$y0ucantsee.meme@";
 
 const settingForm = ref({
     panel_password: secretPassword,
     repeat_panel_password: "",
-    captcha_type: 0
+    captcha_type: 0,
+    dark_mode: false,
 });
 
 const showSettingDialog = () => {
+    panelStore.refreshConfig();
     settingForm.value.panel_password = secretPassword;
     settingForm.value.repeat_panel_password = "";
+    settingForm.value.dark_mode = panelStore.darkMode;
+    settingForm.value.captcha_type = panelStore.captchaType;
     dialogSettingVisible.value = true;
-    axiosInstance.get('/config').then(res => {
-        settingForm.value.captcha_type = res.data.captcha_type;
-    }).catch(() => {
-        ElMessage.error('获取配置参数失败');
-    });
-}
-onMounted(() => {
-    axiosInstance.get('/config').then(res => {
-        settingForm.value.captcha_type = res.data.captcha_type;
-    }).catch(() => {
-        ElMessage.error('获取配置参数失败');
-    });
-})
+};
+
 const updateSetting = () => {
     if (settingForm.value.panel_password != secretPassword && settingForm.value.panel_password != settingForm.value.repeat_panel_password) {
         ElMessage({
@@ -57,9 +55,13 @@ const updateSetting = () => {
                 type: 'error',
             });
         })
-    }).catch(() => { })
-
+    }).catch(() => { });
 }
+watch(() => dialogSettingVisible.value, (val: boolean) => {
+    if (!val) {
+        panelStore.refreshConfig();
+    }
+})
 defineExpose({ showSettingDialog });
 </script>
 <template>
@@ -74,7 +76,7 @@ defineExpose({ showSettingDialog });
                 <el-input placeholder="请再次输入相同密码" type="password" v-model="settingForm.repeat_panel_password"
                     autocomplete="off" clearable show-password />
             </el-form-item>
-            <el-form-item label="面板登陆验证码:" :label-width="140">
+            <el-form-item label="面板登陆行为验证:" :label-width="140">
                 <el-radio-group v-model="settingForm.captcha_type">
                     <el-radio :value="0">关闭</el-radio>
                     <el-radio :value="1">点选式(文字)</el-radio>
@@ -83,6 +85,11 @@ defineExpose({ showSettingDialog });
                     <el-radio :value="4">拖拽式</el-radio>
                     <el-radio :value="5">旋转拼图</el-radio>
                 </el-radio-group>
+            </el-form-item>
+            <el-form-item label="面板主题:" :label-width="140">
+
+                <el-switch v-model="settingForm.dark_mode" :active-icon="Moon" :inactive-icon="Sunny" inline-prompt
+                    @change="isDark = settingForm.dark_mode" />
             </el-form-item>
         </el-form>
         <el-button type="primary" @click="updateSetting">保存设置</el-button>

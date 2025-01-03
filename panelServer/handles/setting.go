@@ -13,6 +13,7 @@ func UpdateSetting(ctx *gin.Context) {
 	type SettingRequestData struct {
 		PanelPassword string `json:"panel_password"`
 		CaptchaType   uint   `json:"captcha_type"`
+		DarkMode      bool   `json:"dark_mode"`
 	}
 	settingRequest := &SettingRequestData{}
 	err := ctx.ShouldBindJSON(settingRequest)
@@ -28,7 +29,9 @@ func UpdateSetting(ctx *gin.Context) {
 		storages.StorageInstance.DeleteWithPrefix("l_")
 	}
 	config.Cfg.CaptchaType = settingRequest.CaptchaType
+	config.Cfg.DarkMode = settingRequest.DarkMode
 	viper.Set("captcha_type", config.Cfg.CaptchaType)
+	viper.Set("dark_mode", config.Cfg.DarkMode)
 	err = viper.WriteConfig()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

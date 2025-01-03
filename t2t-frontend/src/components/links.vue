@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import moment from 'moment';
 import TrafficChart from './trafficChart.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -23,17 +23,25 @@ onMounted(() => {
             yy: '%d年'
         },
     });
-})
+});
+onUnmounted(() => {
+    if (linksDataRefreshTimer.value != 0) {
+        clearInterval(linksDataRefreshTimer.value);
+    }
+});
 const dialogTableVisible = ref(false);
 const proxyUUID = ref('');
 const proxyName = ref('');
 const proxyMaxLink = ref(0);
 const linksDataRefreshTimer = ref<number>(0);
+const linksLoading = ref(false);
 const showLinksPage = (uuid: string, name: string, maxLink: number) => {
+    proxyLinksData.value = [];
     proxyMaxLink.value = maxLink;
     proxyUUID.value = uuid;
     proxyName.value = name;
     dialogTableVisible.value = true;
+    linksLoading.value = true;
     refreshLinks();
     linksDataRefreshTimer.value = setInterval(refreshLinks, 1500);
 }
@@ -57,6 +65,10 @@ const refreshLinks = () => {
             }
         });
     }).catch(() => {
+    }).finally(() => {
+        if (linksLoading.value) {
+            linksLoading.value = false;
+        };
     });
 }
 const kickLink = (uuid: string) => {
@@ -88,7 +100,7 @@ defineExpose({ showLinksPage })
     <el-dialog draggable v-model="dialogTableVisible"
         :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink == 0 ? '无限制' : proxyMaxLink})`" width="100%"
         style="max-width:800px">
-        <el-table :data="proxyLinksData" width="100%">
+        <el-table v-loading="linksLoading" :data="proxyLinksData" width="100%">
             <el-table-column fixed="left" prop="ip" label="IP地址" />
             <el-table-column label="连接时长" min-width="120">
                 <template #default="scope">
@@ -99,7 +111,8 @@ defineExpose({ showLinksPage })
             </el-table-column>
             <el-table-column label="网络" min-width="200">
                 <template #default="scope">
-                    <TrafficChart :key="scope.row.uuid" :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el" class="tChart" />
+                    <TrafficChart :key="scope.row.uuid" :ref="el => proxyTrafficChartRefs[scope.row.uuid] = el"
+                        class="tChart" />
                 </template>
             </el-table-column>
             <el-table-column fixed="right" label="操作" min-width="60">

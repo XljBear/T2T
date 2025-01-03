@@ -1,19 +1,24 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import proxyPanel from './components/proxyPanel.vue';
 import login from './components/login.vue';
 import { useLoginStore } from './stores/login';
+import { usePanelStore } from './stores/panel';
 const loginStore = useLoginStore();
-onMounted(() => {
+const panelStore = usePanelStore();
+const inInit = ref(true);
+onMounted(async () => {
   const cookies = document.cookie;
   if (cookies.includes('token=')) {
     loginStore.isLogin = true;
-  }
+  };
+  await panelStore.refreshConfig();
+  inInit.value = false;
 });
 </script>
 
 <template>
-  <div class="app">
+  <div v-if="!inInit" class="app">
     <proxyPanel v-if="loginStore.isLogin" />
     <login v-else />
   </div>

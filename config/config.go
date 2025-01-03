@@ -23,6 +23,7 @@ type Config struct {
 	PanelListenAddress string               `mapstructure:"panel_listen_address" yaml:"panel_listen_address" json:"panel_listen_address"`
 	PanelPassword      string               `mapstructure:"panel_password" yaml:"panel_password" json:"panel_password"`
 	CaptchaType        uint                 `mapstructure:"captcha_type" yaml:"captcha_type" json:"captcha_type"`
+	DarkMode           bool                 `mapstructure:"dark_mode" yaml:"dark_mode" json:"dark_mode"`
 }
 
 const configFileName = "proxy"
@@ -64,6 +65,7 @@ func CreateDefaultConfig() error {
 	viper.Set("panel_listen_address", ":8080")
 	viper.Set("panel_password", "admin")
 	viper.Set("captcha_type", 1)
+	viper.Set("dark_mode", false)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err

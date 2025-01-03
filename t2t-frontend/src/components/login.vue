@@ -3,6 +3,8 @@ import { ref, reactive, onMounted } from 'vue';
 import { axiosInstance } from '../utils/axios';
 import { ElMessage } from 'element-plus';
 import { useLoginStore } from '../stores/login';
+import { usePanelStore } from '../stores/panel';
+const panelStore = usePanelStore();
 const loginStore = useLoginStore();
 const captchaRef = ref();
 const captchaData = reactive({
@@ -13,21 +15,18 @@ const captchaData = reactive({
   thumbX: 0,
   thumbY: 0,
   captcha_id: '',
-
 });
 const captchaType = ref(0);
 const loginForm = reactive({
   password: '',
 })
+const captchaLoading = ref(false);
 onMounted(() => {
-  axiosInstance.get('/config').then(res => {
-    captchaType.value = res.data.captcha_type;
-  }).catch(() => {
-    ElMessage.error('获取配置参数失败');
-  });
+  captchaType.value = panelStore.captchaType;
 })
 const dialogCaptchaVisible = ref(false);
 const refreshCaptcha = () => {
+  captchaLoading.value = true;
   axiosInstance.get('/captcha').then(res => {
     captchaData.image = res.data.captcha;
     captchaData.thumb = res.data.thumb;
@@ -36,6 +35,10 @@ const refreshCaptcha = () => {
     captchaData.thumbX = res.data.thumb_x;
     captchaData.thumbY = res.data.thumb_y;
     captchaData.captcha_id = res.data.captcha_id;
+  }).catch(() => {
+    ElMessage.error('获取行为验证参数失败');
+  }).finally(() => {
+    captchaLoading.value = false;
   });
 };
 const captchaConfirm = (captcha: any, reset: () => void) => {
@@ -131,7 +134,7 @@ const showCaptcha = () => {
       </template>
     </el-card>
     <el-dialog draggable v-model="dialogCaptchaVisible" title="安全验证" width="100%" style="max-width:400px">
-      <div class="captcha">
+      <div v-loading="captchaLoading" class="captcha">
         <gocaptcha-click v-if="captchaType == 1 || captchaType == 2" :config="{}" :data="captchaData"
           :events="{ refresh: refreshCaptcha, confirm: captchaConfirm }" ref="captchaRef" />
         <gocaptcha-slide v-if="captchaType == 3" :config="{}" :data="captchaData"
@@ -152,7 +155,7 @@ const showCaptcha = () => {
   justify-content: center;
 
   .card-header {
-    color: #333;
+    // color: #333;
     font-size: 24px;
     font-weight: bold;
   }

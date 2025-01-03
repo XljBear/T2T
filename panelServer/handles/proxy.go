@@ -31,6 +31,7 @@ func CreateProxy(ctx *gin.Context) {
 		}
 	}
 	proxyData.UUID = uuid.New().String()
+	config.Cfg.Proxy = append(config.Cfg.Proxy, proxyData)
 	err = config.SaveProxy()
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})

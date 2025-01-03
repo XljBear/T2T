@@ -165,15 +165,11 @@ func KickProxyServer(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid link uuid"})
 		return
 	}
-	if _, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr); !ok {
+	if proxy, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr); !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid link uuid"})
 		return
+	} else {
+		proxy.(*proxyServer.Link).Close()
 	}
-	proxy, ok := proxyServer.ProxyServerInstance.ProxyManager[proxyUUIDStr].Links.Load(linkUUIDStr)
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal error"})
-		return
-	}
-	proxy.(*proxyServer.Link).Close()
 	ctx.JSON(http.StatusOK, gin.H{})
 }

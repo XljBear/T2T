@@ -4,6 +4,7 @@ import (
 	"T2T/config"
 	"T2T/panelServer/structs"
 	"T2T/proxyServer"
+	proxyServerStructs "T2T/proxyServer/structs"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
@@ -135,13 +136,13 @@ func GetLinks(ctx *gin.Context) {
 		for linkUUID, link := range proxy.Links.Range {
 			linkData := structs.Link{
 				UUID:     linkUUID.(string),
-				IP:       link.(*proxyServer.Link).RemoteIP,
-				LinkTime: link.(*proxyServer.Link).Start,
+				IP:       link.(*proxyServerStructs.Link).RemoteIP,
+				LinkTime: link.(*proxyServerStructs.Link).Start,
 				Traffic: &structs.TrafficData{
-					DownlinkInSecond: link.(*proxyServer.Link).Traffic.DownlinkInSecond,
-					DownlinkTotal:    link.(*proxyServer.Link).Traffic.DownlinkTotal,
-					UplinkInSecond:   link.(*proxyServer.Link).Traffic.UplinkInSecond,
-					UplinkTotal:      link.(*proxyServer.Link).Traffic.UplinkTotal,
+					DownlinkInSecond: link.(*proxyServerStructs.Link).Traffic.DownlinkInSecond,
+					DownlinkTotal:    link.(*proxyServerStructs.Link).Traffic.DownlinkTotal,
+					UplinkInSecond:   link.(*proxyServerStructs.Link).Traffic.UplinkInSecond,
+					UplinkTotal:      link.(*proxyServerStructs.Link).Traffic.UplinkTotal,
 				},
 			}
 			links = append(links, linkData)
@@ -170,7 +171,7 @@ func KickProxyServer(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid link uuid"})
 		return
 	} else {
-		proxy.(*proxyServer.Link).Close()
+		proxy.(*proxyServerStructs.Link).Close()
 	}
 	ctx.JSON(http.StatusOK, gin.H{})
 }

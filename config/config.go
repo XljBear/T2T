@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"sync"
 
@@ -32,6 +33,8 @@ var Cfg = Config{}
 var cfgLock sync.Mutex
 
 func Init() {
+	cfgLock.Lock()
+	defer cfgLock.Unlock()
 	Cfg = Config{}
 	viper.SetConfigName(configFileName)
 	viper.SetConfigType("yaml")
@@ -50,6 +53,7 @@ func Init() {
 	if e != nil {
 		panic(e)
 	}
+	log.Println("Config loaded.")
 }
 
 func CreateDefaultConfig() error {

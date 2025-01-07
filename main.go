@@ -5,27 +5,33 @@ import (
 	"T2T/panelServer"
 	"T2T/proxyServer"
 	"T2T/storages"
-	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 func main() {
 
+	log.Println("Starting T2T server...")
 	config.Init()
+	config.InitBlockIPs()
 	storages.Init()
-	defer storages.Release()
+
+	systemSignal := make(chan os.Signal, 1)
+	signal.Notify(systemSignal, syscall.SIGINT, syscall.SIGTERM)
 
 	proxyServer.ProxyServerInstance = &proxyServer.ProxyServer{}
 	proxySuccess := proxyServer.ProxyServerInstance.Start()
-	defer proxyServer.ProxyServerInstance.Stop()
 
 	var panelSuccess bool
 	if config.Cfg.EnablePanel {
 		panelSuccess = panelServer.StartPanelServer(config.Cfg.PanelListenAddress)
 		if panelSuccess {
-			fmt.Println("Panel server started successfully")
+			log.Println("Panel server started successfully.")
 		} else {
-			fmt.Println("Panel server failed to start")
+			log.Println("Panel server failed to start.")
 		}
 	}
 
@@ -34,6 +40,15 @@ func main() {
 	}
 
 	for {
-		time.Sleep(time.Millisecond * 100)
+		select {
+		case <-systemSignal:
+			log.Println("Received system signal, exiting...")
+			config.StopIPCleaner()
+			storages.Release()
+			proxyServer.ProxyServerInstance.Stop()
+			log.Println("Stopped T2T server.")
+			return
+		case <-time.After(time.Millisecond * 100):
+		}
 	}
 }

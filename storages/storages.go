@@ -1,6 +1,7 @@
 package storages
 
 import (
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -68,6 +69,7 @@ func (s *Storage) Init() {
 			select {
 			case <-s.ReleaseSignal:
 				s.Clean()
+				log.Println("Storage released.")
 				break
 			case <-time.After(time.Second):
 				continue
@@ -87,6 +89,7 @@ func Init() {
 	}
 	StorageInstance = &Storage{}
 	StorageInstance.Init()
+	log.Println("Storage initialized.")
 }
 func Release() {
 	if StorageInstance != nil {

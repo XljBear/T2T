@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"time"
 )
@@ -24,7 +25,7 @@ func StartPanelServer(panelListenAddress string) bool {
 		ctx.Redirect(302, "/panel")
 	})
 	routers.RegisterApiRouter(r)
-	fmt.Println("Panel server is Starting on " + panelListenAddress)
+	log.Println("Panel server starting on " + panelListenAddress + "...")
 	var broken chan bool
 	broken = make(chan bool, 1)
 
@@ -38,7 +39,7 @@ func StartPanelServer(panelListenAddress string) bool {
 	select {
 	case <-broken:
 		return false
-	case <-time.After(time.Second * 3):
+	case <-time.After(time.Second * 1):
 		return true
 	}
 }

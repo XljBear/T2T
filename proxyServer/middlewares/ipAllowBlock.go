@@ -6,25 +6,37 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 )
 
 func IPAllowBlock(proxy *structs.Proxy, conn net.Conn) error {
-	IPList := []config.IPItem{}
+	proxyPort := strings.Split(proxy.RemoteAddress, ":")[1]
+	connIP := conn.RemoteAddr().(*net.TCPAddr).IP.String()
 	switch config.AllowBlockCfg.AllowBlock.Mode {
 	case 1:
 		// Block Mode
-		IPList = config.AllowBlockCfg.AllowBlock.Block.BlockIPs
+		IPList := config.AllowBlockCfg.AllowBlock.Block.BlockIPs
+		for _, ip := range IPList {
+			if ip.IP == connIP && (ip.Port == "" || ip.Port == proxyPort) {
+				return errors.New(fmt.Sprintf("IP %s was blocked.", connIP))
+			}
+		}
 	case 2:
 		// Allow Mode
-		IPList = config.AllowBlockCfg.AllowBlock.Allow.AllowIPs
+		IPList := config.AllowBlockCfg.AllowBlock.Allow.AllowIPs
+		exist := false
+		for _, ip := range IPList {
+			if ip.IP == connIP && (ip.Port == "" || ip.Port == proxy.RemoteAddress) {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			return errors.New(fmt.Sprintf("IP %s is not allowed.", connIP))
+		}
 	default:
 		// Disable Mode
 		return nil
-	}
-	for _, ip := range IPList {
-		if ip.IP == conn.RemoteAddr().(*net.TCPAddr).IP.String() && (ip.Port == "" || ip.Port == proxy.RemoteAddress) {
-			return errors.New(fmt.Sprintf("IP %s is not allowed.", ip.IP))
-		}
 	}
 	return nil
 }

@@ -71,7 +71,7 @@ func InitBlockIPs() {
 	if e != nil {
 		panic(e)
 	}
-	log.Println("IP Ruler initialized.")
+	log.Println("IP ruler initialized.")
 }
 func StopIPCleaner() {
 	ipCleaner.Stop()

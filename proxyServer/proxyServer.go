@@ -102,7 +102,7 @@ func (ps *ProxyServer) Start() (success bool) {
 				if err != nil {
 					return
 				}
-				err = proxy.ProxyMiddlewareChain(localConn, middlewares.MaxLinks, middlewares.IPAllowBlock)
+				err = proxy.ProxyMiddlewareChain(localConn, middlewares.IPAllowBlock, middlewares.MaxLinks)
 				if err != nil {
 					_ = localConn.Close()
 					log.Println(err.Error())

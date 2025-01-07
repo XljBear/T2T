@@ -46,7 +46,7 @@ func main() {
 			config.StopIPCleaner()
 			storages.Release()
 			proxyServer.ProxyServerInstance.Stop()
-			log.Println("Stopped T2T server.")
+			log.Println("T2T server stopped.")
 			return
 		case <-time.After(time.Millisecond * 100):
 		}

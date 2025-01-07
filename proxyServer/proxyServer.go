@@ -117,9 +117,8 @@ func (ps *ProxyServer) Start() (success bool) {
 			ps.writeProxyTraffic()
 			select {
 			case <-ps.StopSignal:
-				log.Println("Proxy server stopped.")
 				return
-			case <-time.After(time.Second * 10):
+			case <-time.After(time.Second * 30):
 				continue
 			}
 		}
@@ -127,11 +126,14 @@ func (ps *ProxyServer) Start() (success bool) {
 	if len(ps.ProxyManager) == 0 {
 		log.Println("No proxy configured, exiting.")
 		return false
+	} else {
+		log.Println("All proxy started.")
 	}
 	return true
 }
 func (ps *ProxyServer) Stop() {
 	ps.ProxyManager.CloseAllProxy()
+	log.Println("Proxy server stopped.")
 	ps.StopSignal <- true
 }
 func (ps *ProxyServer) writeProxyTraffic() {

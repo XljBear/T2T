@@ -151,6 +151,20 @@ func (ab *AllowBlock) DeleteBlockIPByUUID(uuid string) {
 	}
 }
 
+func (ab *AllowBlock) AddAllowIP(ipItem IPItem) {
+	ab.AllowLock.Lock()
+	defer ab.AllowLock.Unlock()
+	ab.Allow.AllowIPs = append(ab.Allow.AllowIPs, ipItem)
+	go SaveAllowBlock()
+}
+
+func (ab *AllowBlock) AddBlockIP(ip IPItem) {
+	ab.BlockLock.Lock()
+	defer ab.BlockLock.Unlock()
+	ab.Block.BlockIPs = append(ab.Block.BlockIPs, ip)
+	go SaveAllowBlock()
+}
+
 func (ab *AllowBlock) GetAllowIPsByPort(port string) []IPItem {
 	var allowIPs []IPItem
 	for _, ip := range ab.Allow.AllowIPs {
@@ -201,4 +215,10 @@ func (ic *IPCleaner) Start() {
 func (ic *IPCleaner) Stop() {
 	ic.ExitSignal <- true
 	log.Println("IP cleaner stopped.")
+}
+
+func ReloadAllowBlock() error {
+	InitBlockIPs()
+	log.Println("IP ruler reloaded.")
+	return nil
 }

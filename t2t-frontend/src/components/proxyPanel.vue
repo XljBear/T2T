@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { Plus, Refresh, Cherry, Setting, SwitchButton } from '@element-plus/icons-vue';
 import { onMounted, ref, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import TrafficChart from './trafficChart.vue';
-import Links from './links.vue';
-import Setting from './setting.vue';
+import LinksDialog from './links.vue';
+import SettingDialog from './setting.vue';
+import IPRulesDialog from './ipRules.vue';
 import { axiosInstance } from '../utils/axios';
 import { useLoginStore } from '../stores/login';
 const loginStore = useLoginStore();
@@ -22,6 +23,7 @@ const proxyForm = ref({
 });
 const linksPage = ref();
 const settingPage = ref();
+const ipRulesPage = ref();
 onMounted(() => {
     getProxyList();
 });
@@ -122,7 +124,7 @@ const getProxyList = () => {
             refreshProxyTrafficTimer.value = setInterval(refreshProxyTrafficData, 1500);
         }
     }).catch(() => {
-    }).finally(()=>{
+    }).finally(() => {
         proxyLoading.value = false;
     });
 }
@@ -216,8 +218,9 @@ const refreshProxyTrafficData = () => {
     }).catch(() => {
     });
 }
-const showLinks = (uuid: string, name: string, maxLink: number) => {
-    linksPage.value.showLinksPage(uuid, name, maxLink);
+const showLinks = (uuid: string, name: string, maxLink: number, localAddress: string) => {
+    const localPort = localAddress.split(":")
+    linksPage.value.showLinksPage(uuid, name, maxLink, localPort[localPort.length - 1]);
 }
 const showSetting = () => {
     settingPage.value.showSettingDialog();
@@ -239,6 +242,9 @@ const logout = () => {
     }).catch(() => {
     });
 }
+const showIPRules = () => {
+    ipRulesPage.value.showIPRulesDialog();
+}
 </script>
 
 <template>
@@ -248,7 +254,7 @@ const logout = () => {
             <template #header>
                 <div class="card-header">
                     <el-button :icon="Plus" type="primary" @click="createProxyForm">创建反代理配置</el-button>
-                    <el-button :icon="Refresh" type="danger" @click="restartService">重启服务</el-button>
+                    <el-button :icon="Cherry" type="danger" @click="showIPRules">防火墙配置</el-button>
                 </div>
             </template>
             <el-table v-loading="proxyLoading" :data="proxyData" stripe style="width: 100%">
@@ -257,7 +263,9 @@ const logout = () => {
                 <el-table-column prop="remote_address" label="远程端口" min-width="150" />
                 <el-table-column label="连接数" min-width="100">
                     <template #default="scope">
-                        <el-link @click="showLinks(scope.row.uuid, scope.row.name, scope.row.max_link)" type="warning">
+                        <el-link
+                            @click="showLinks(scope.row.uuid, scope.row.name, scope.row.max_link, scope.row.local_address)"
+                            type="warning">
                             {{ proxyTrafficData[scope.row.uuid] ? proxyTrafficData[scope.row.uuid].link_count : 0
                             }}</el-link> / {{
                                 scope.row.max_link
@@ -290,8 +298,9 @@ const logout = () => {
             </el-table>
             <template #footer>
                 <div class="systemAction">
-                    <el-button type="primary" link @click="showSetting">系统设置</el-button>
-                    <el-button type="danger" link @click="logout">退出登录</el-button>
+                    <el-button :icon="Setting" type="info" link @click="showSetting">系统设置</el-button>
+                    <el-button :icon="SwitchButton" type="warning" link @click="logout">退出登录</el-button>
+                    <el-button :icon="Refresh" type="danger" link @click="restartService">重启服务</el-button>
                 </div>
                 <div class="card-footer">T2T Server v0.0.1 © StupidBear Studio 2024</div>
             </template>
@@ -324,8 +333,9 @@ const logout = () => {
                 </div>
             </template>
         </el-dialog>
-        <Links ref="linksPage" />
-        <Setting ref="settingPage" />
+        <LinksDialog ref="linksPage" />
+        <SettingDialog ref="settingPage" />
+        <IPRulesDialog ref="ipRulesPage" />
     </div>
 </template>
 

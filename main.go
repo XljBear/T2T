@@ -15,7 +15,7 @@ import (
 func main() {
 
 	log.Println("Starting T2T server...")
-	config.Init()
+	config.InitConfig()
 	config.InitBlockIPs()
 	storages.Init()
 

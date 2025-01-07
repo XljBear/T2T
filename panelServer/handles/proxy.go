@@ -7,6 +7,7 @@ import (
 	proxyServerStructs "T2T/proxyServer/structs"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"sort"
 )
@@ -90,8 +91,19 @@ func DeleteProxy(ctx *gin.Context) {
 }
 
 func RestartProxyServer(ctx *gin.Context) {
-	config.Init()
 	proxyServer.ProxyServerInstance.Start()
+	err := config.ReloadConfig()
+	if err != nil {
+		log.Printf("Error reloading proxy server: %v\n", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	err = config.ReloadAllowBlock()
+	if err != nil {
+		log.Printf("Error reloading allow block: %v\n", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	ctx.JSON(200, gin.H{})
 }
 

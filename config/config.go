@@ -32,7 +32,7 @@ const configFileName = "proxy"
 var Cfg = Config{}
 var cfgLock sync.Mutex
 
-func Init() {
+func InitConfig() {
 	cfgLock.Lock()
 	defer cfgLock.Unlock()
 	Cfg = Config{}
@@ -117,4 +117,10 @@ func DeleteProxyByUUID(uuid string) bool {
 		return false
 	}
 	return true
+}
+
+func ReloadConfig() error {
+	InitConfig()
+	log.Println("Config reloaded.")
+	return nil
 }

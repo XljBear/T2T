@@ -150,7 +150,6 @@ const showCaptcha = () => {
 <style scoped lang="scss">
 .login {
   width: 100%;
-  height: 100%;
   display: flex;
   justify-content: center;
 

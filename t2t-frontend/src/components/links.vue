@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue';
+import { CloseBold, Cherry } from '@element-plus/icons-vue';
 import moment from 'moment';
 import TrafficChart from './trafficChart.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { axiosInstance } from '../utils/axios';
+import AddIPRule from './addIPRule.vue';
 const proxyTrafficChartRefs = ref<any>({});
+const addIPRuleDialog = ref();
 onMounted(() => {
     moment.defineLocale('zh-cn', {
         relativeTime: {
@@ -35,13 +38,15 @@ const proxyName = ref('');
 const proxyMaxLink = ref(0);
 const linksDataRefreshTimer = ref<number>(0);
 const linksLoading = ref(false);
-const showLinksPage = (uuid: string, name: string, maxLink: number) => {
+const proxyPort = ref("");
+const showLinksPage = (uuid: string, name: string, maxLink: number, port: string) => {
     proxyLinksData.value = [];
     proxyMaxLink.value = maxLink;
     proxyUUID.value = uuid;
     proxyName.value = name;
     dialogTableVisible.value = true;
     linksLoading.value = true;
+    proxyPort.value = port;
     refreshLinks();
     linksDataRefreshTimer.value = setInterval(refreshLinks, 1500);
 }
@@ -96,11 +101,14 @@ const kickLink = (uuid: string) => {
         });
     }).catch(() => {
     });
-}
+};
+const showAddIPRuleDialog = (ip: string) => {
+    addIPRuleDialog.value.showAddIPRuleDialog(ip, proxyPort.value);
+};
 defineExpose({ showLinksPage })
 </script>
 <template>
-    <el-dialog draggable v-model="dialogTableVisible"
+    <el-dialog v-model="dialogTableVisible"
         :title="`${proxyName} 连接池 (${proxyLinksData.length}/${proxyMaxLink == 0 ? '无限制' : proxyMaxLink})`" width="100%"
         style="max-width:800px">
         <el-table v-loading="linksLoading" :data="proxyLinksData" width="100%">
@@ -118,9 +126,15 @@ defineExpose({ showLinksPage })
                         class="tChart" />
                 </template>
             </el-table-column>
-            <el-table-column fixed="right" label="操作" min-width="60">
+            <el-table-column fixed="right" label="操作" min-width="140">
                 <template #default="scope">
-                    <el-button type="danger" link @click="kickLink(scope.row.uuid)">断开</el-button>
+                    <el-tooltip content="断开连接">
+                        <el-button type="danger" :icon="CloseBold" size="small" @click="kickLink(scope.row.uuid)" />
+                    </el-tooltip>
+                    <el-tooltip content="加入防火墙规则">
+                        <el-button type="primary" :icon="Cherry" size="small"
+                            @click="showAddIPRuleDialog(scope.row.ip)" />
+                    </el-tooltip>
                 </template>
             </el-table-column>
             <template #empty>
@@ -130,6 +144,7 @@ defineExpose({ showLinksPage })
             </template>
         </el-table>
     </el-dialog>
+    <AddIPRule ref="addIPRuleDialog" />
 </template>
 <style scoped lang="scss">
 .tChart {

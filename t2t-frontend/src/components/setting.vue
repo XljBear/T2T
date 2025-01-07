@@ -16,13 +16,15 @@ const settingForm = ref({
     captcha_type: 0,
     dark_mode: false,
 });
-
-const showSettingDialog = () => {
+const refreshConfig = () => {
     panelStore.refreshConfig();
     settingForm.value.panel_password = secretPassword;
     settingForm.value.repeat_panel_password = "";
     settingForm.value.dark_mode = panelStore.darkMode;
     settingForm.value.captcha_type = panelStore.captchaType;
+}
+const showSettingDialog = () => {
+    refreshConfig();
     dialogSettingVisible.value = true;
 };
 
@@ -56,6 +58,30 @@ const updateSetting = () => {
             });
         })
     }).catch(() => { });
+}
+const reload = () => {
+    ElMessageBox.confirm(
+        '确定要重载设置吗？',
+        {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        axiosInstance.post("/reload").then(() => {
+            ElMessage({
+                message: '已重新加载设置',
+                type: 'success',
+            });
+            refreshConfig();
+        }).catch(() => {
+            ElMessage({
+                message: '设置重载失败',
+                type: 'error',
+            });
+        });
+    }).catch(() => {
+    });
 }
 watch(() => dialogSettingVisible.value, (val: boolean) => {
     if (!val) {
@@ -92,6 +118,7 @@ defineExpose({ showSettingDialog });
                     @change="isDark = settingForm.dark_mode" />
             </el-form-item>
         </el-form>
+        <el-button type="warning" @click="reload">重载设置</el-button>
         <el-button type="primary" @click="updateSetting">保存设置</el-button>
     </el-dialog>
 </template>

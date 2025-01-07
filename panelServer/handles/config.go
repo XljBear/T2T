@@ -18,3 +18,8 @@ func GetConfig(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, data)
 	return
 }
+
+func ReloadConfig(ctx *gin.Context) {
+	config.ReloadConfig()
+	ctx.JSON(http.StatusOK, config.Cfg)
+}

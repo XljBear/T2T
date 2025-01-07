@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os"
+	"slices"
 	"sync"
 	"time"
 )
@@ -11,7 +12,7 @@ import (
 type IPItem struct {
 	UUID      string     `mapstructure:"uuid" yaml:"uuid" json:"uuid"`
 	IP        string     `mapstructure:"ip" yaml:"ip" json:"ip"`
-	Port      string     `mapstructure:"port" yaml:"port" json:"port"` // empty means all ports
+	Port      []string   `mapstructure:"port" yaml:"port" json:"port"` // empty means all ports
 	StartTime time.Time  `mapstructure:"start_time" yaml:"start_time" json:"start_time"`
 	EndTime   *time.Time `mapstructure:"end_time" yaml:"end_time" json:"end_time"`
 	Reason    string     `mapstructure:"reason" yaml:"reason" json:"reason"`
@@ -153,7 +154,7 @@ func (ab *AllowBlock) DeleteBlockIPByUUID(uuid string) {
 func (ab *AllowBlock) GetAllowIPsByPort(port string) []IPItem {
 	var allowIPs []IPItem
 	for _, ip := range ab.Allow.AllowIPs {
-		if ip.Port == port || ip.Port == "" {
+		if len(ip.Port) == 0 || slices.Contains(ip.Port, port) {
 			allowIPs = append(allowIPs, ip)
 		}
 	}
@@ -163,7 +164,7 @@ func (ab *AllowBlock) GetAllowIPsByPort(port string) []IPItem {
 func (ab *AllowBlock) GetBlockIPsByPort(port string) []IPItem {
 	var blockIPs []IPItem
 	for _, ip := range ab.Block.BlockIPs {
-		if ip.Port == port || ip.Port == "" {
+		if len(ip.Port) == 0 || slices.Contains(ip.Port, port) {
 			blockIPs = append(blockIPs, ip)
 		}
 	}

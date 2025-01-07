@@ -6,32 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
+	"slices"
+	"strconv"
 )
 
 func IPAllowBlock(proxy *structs.Proxy, conn net.Conn) error {
-	proxyPort := strings.Split(proxy.RemoteAddress, ":")[1]
+	localPort := strconv.Itoa(conn.LocalAddr().(*net.TCPAddr).Port)
 	connIP := conn.RemoteAddr().(*net.TCPAddr).IP.String()
 	switch config.AllowBlockCfg.AllowBlock.Mode {
 	case 1:
 		// Block Mode
 		IPList := config.AllowBlockCfg.AllowBlock.Block.BlockIPs
-		for _, ip := range IPList {
-			if ip.IP == connIP && (ip.Port == "" || ip.Port == proxyPort) {
-				return errors.New(fmt.Sprintf("IP %s was blocked.", connIP))
-			}
+		if matchRule(connIP, localPort, IPList) {
+			return errors.New(fmt.Sprintf("IP %s was blocked.", connIP))
 		}
 	case 2:
 		// Allow Mode
 		IPList := config.AllowBlockCfg.AllowBlock.Allow.AllowIPs
-		exist := false
-		for _, ip := range IPList {
-			if ip.IP == connIP && (ip.Port == "" || ip.Port == proxy.RemoteAddress) {
-				exist = true
-				break
-			}
-		}
-		if !exist {
+		if !matchRule(connIP, localPort, IPList) {
 			return errors.New(fmt.Sprintf("IP %s is not allowed.", connIP))
 		}
 	default:
@@ -39,4 +31,12 @@ func IPAllowBlock(proxy *structs.Proxy, conn net.Conn) error {
 		return nil
 	}
 	return nil
+}
+func matchRule(connIP string, port string, ipList []config.IPItem) bool {
+	for _, ip := range ipList {
+		if ip.IP == connIP && (len(ip.Port) == 0 || slices.Contains(ip.Port, port)) {
+			return true
+		}
+	}
+	return false
 }

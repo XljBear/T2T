@@ -68,7 +68,7 @@ func CreateDefaultConfig() error {
 	viper.Set("enable_panel", true)
 	viper.Set("panel_listen_address", ":8080")
 	viper.Set("panel_password", "admin")
-	viper.Set("captcha_type", 1)
+	viper.Set("captcha_type", 0)
 	viper.Set("dark_mode", false)
 	err = viper.WriteConfig()
 	if err != nil {

@@ -65,7 +65,7 @@ func (ps *ProxyServer) Start() (success bool) {
 		ps.ProxyManager = make(map[string]*structs.Proxy)
 		log.Println("Starting proxy server.")
 	}
-	ps.StopSignal = make(chan bool)
+	ps.StopSignal = make(chan bool, 1)
 	if len(config.Cfg.Proxy) == 0 {
 		log.Println("No proxy configured, exiting.")
 		return false

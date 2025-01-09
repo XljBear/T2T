@@ -116,9 +116,9 @@ const showCaptcha = () => {
 </script>
 <template>
   <div class="login">
-    <el-card style="width: 80%;">
+    <el-card class="panel">
       <template #header>
-        <div class="card-header">T2T 控制面板</div>
+        <div class="cardHeader">T2T 控制面板</div>
       </template>
       <div class="loginForm">
         <el-form label-width="auto" :model="loginForm" style="max-width: 600px">
@@ -130,7 +130,7 @@ const showCaptcha = () => {
         </el-form>
       </div>
       <template #footer>
-        <div class="card-footer">T2T Server v0.0.1 © StupidBear Studio 2024</div>
+        <div class="cardFooter">T2T Server v0.0.1 © StupidBear Studio 2024</div>
       </template>
     </el-card>
     <el-dialog draggable v-model="dialogCaptchaVisible" title="安全验证" width="100%" style="max-width:400px">
@@ -153,8 +153,11 @@ const showCaptcha = () => {
   display: flex;
   justify-content: center;
 
-  .card-header {
-    // color: #333;
+  .panel {
+    width: 80%;
+  }
+
+  .cardHeader {
     font-size: 24px;
     font-weight: bold;
   }
@@ -171,9 +174,17 @@ const showCaptcha = () => {
     justify-content: center;
   }
 
-  .card-footer {
+  .cardFooter {
     color: #ccc;
     font-size: 12px;
+  }
+}
+
+@media screen and (orientation: portrait) and (max-width: 768px) {
+  .login {
+    .panel {
+      width: 95%;
+    }
   }
 }
 </style>

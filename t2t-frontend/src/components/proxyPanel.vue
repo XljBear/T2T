@@ -250,9 +250,9 @@ const showIPRules = () => {
 <template>
     <div class="proxyPanel">
         <h1>T2T Service Panel</h1>
-        <el-card style="width: 80%;">
+        <el-card class="panel">
             <template #header>
-                <div class="card-header">
+                <div class="cardHeader">
                     <el-button :icon="Plus" type="primary" @click="createProxyForm">创建反代理配置</el-button>
                     <el-button :icon="Cherry" type="danger" @click="showIPRules">防火墙配置</el-button>
                 </div>
@@ -302,7 +302,7 @@ const showIPRules = () => {
                     <el-button :icon="SwitchButton" type="warning" link @click="logout">退出登录</el-button>
                     <el-button :icon="Refresh" type="danger" link @click="restartService">重启服务</el-button>
                 </div>
-                <div class="card-footer">T2T Server v0.0.1 © StupidBear Studio 2024</div>
+                <div class="cardFooter">T2T Server v0.0.1 © StupidBear Studio 2024</div>
             </template>
         </el-card>
         <el-dialog v-model="showProxyForm" :title="proxyForm.uuid != '' ? '编辑反代理配置' : '创建反代理配置'" width="100%"
@@ -347,12 +347,16 @@ const showIPRules = () => {
     justify-content: center;
     align-items: center;
 
-    .card-header {
+    .panel {
+        width: 80%;
+    }
+
+    .cardHeader {
         display: flex;
         justify-content: space-between;
     }
 
-    .card-footer {
+    .cardFooter {
         color: #ccc;
         font-size: 12px;
     }
@@ -364,6 +368,18 @@ const showIPRules = () => {
     .tChart {
         width: 200px;
         height: 100px;
+    }
+}
+
+@media screen and (orientation: portrait) and (max-width: 768px) {
+    .proxyPanel {
+        h1 {
+            font-size: 24px;
+        }
+
+        .panel {
+            width: 95%;
+        }
     }
 }
 </style>

@@ -19,8 +19,8 @@ const refreshIPRules = async () => {
     dataInLoading.value = true;
     await ipRulesStore.refreshIPRules();
     ipRulesForm.value.mode = ipRulesStore.mode;
-    ipRulesForm.value.allow = ipRulesStore.allow.allow_ips;
-    ipRulesForm.value.block = ipRulesStore.block.block_ips;
+    ipRulesForm.value.allow = ipRulesStore.allow.allow_ips || [];
+    ipRulesForm.value.block = ipRulesStore.block.block_ips || [];
     dataInLoading.value = false;
 }
 const showIPRulesDialog = async () => {

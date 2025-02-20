@@ -103,17 +103,16 @@ defineExpose({ showSettingDialog });
                     autocomplete="off" clearable show-password />
             </el-form-item>
             <el-form-item label="面板登陆行为验证:" :label-width="140">
-                <el-radio-group v-model="settingForm.captcha_type">
-                    <el-radio :value="0">关闭</el-radio>
-                    <el-radio :value="1">点选式(文字)</el-radio>
-                    <el-radio :value="2">点选式(图形)</el-radio>
-                    <el-radio :value="3">滑动式</el-radio>
-                    <el-radio :value="4">拖拽式</el-radio>
-                    <el-radio :value="5">旋转拼图</el-radio>
-                </el-radio-group>
+                <el-select v-model="settingForm.captcha_type">
+                    <el-option label="关闭" :value="0"></el-option>
+                    <el-option label="点选式(文字)" :value="1"></el-option>
+                    <el-option label="点选式(图形)" :value="2"></el-option>
+                    <el-option label="滑动式" :value="3"></el-option>
+                    <el-option label="拖拽式" :value="4"></el-option>
+                    <el-option label="旋转拼图" :value="5"></el-option>
+                </el-select>
             </el-form-item>
             <el-form-item label="面板主题:" :label-width="140">
-
                 <el-switch v-model="settingForm.dark_mode" :active-icon="Moon" :inactive-icon="Sunny" inline-prompt
                     @change="isDark = settingForm.dark_mode" />
             </el-form-item>

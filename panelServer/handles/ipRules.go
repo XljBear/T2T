@@ -70,7 +70,10 @@ func CreateAllowIPRule(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "IP are required"})
 		return
 	}
-	ports := strings.Split(req.Port, ",")
+	ports := []string{}
+	if req.Port != "" {
+		ports = strings.Split(req.Port, ",")
+	}
 	ipItem := config.IPItem{
 		UUID:      uuid.New().String(),
 		IP:        req.IP,

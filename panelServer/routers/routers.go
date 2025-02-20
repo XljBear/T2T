@@ -9,7 +9,7 @@ import (
 func RegisterApiRouter(app *gin.Engine) {
 	// 登录相关接口
 	app.GET("/api/captcha", handles.Captcha)
-	app.GET("/api/config", handles.GetConfig)
+	app.GET("/api/info", handles.GetInfo)
 	app.POST("/api/login", handles.Login)
 	app.POST("/api/logout", handles.Logout)
 

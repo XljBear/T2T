@@ -4,6 +4,7 @@ import { axiosInstance } from '../utils/axios';
 import { ElMessage } from 'element-plus';
 import { useLoginStore } from '../stores/login';
 import { usePanelStore } from '../stores/panel';
+import FooterInfo from './footer.vue';
 const panelStore = usePanelStore();
 const loginStore = useLoginStore();
 const captchaRef = ref();
@@ -130,7 +131,7 @@ const showCaptcha = () => {
         </el-form>
       </div>
       <template #footer>
-        <div class="cardFooter">T2T Server v0.0.1 © StupidBear Studio 2024</div>
+        <FooterInfo />
       </template>
     </el-card>
     <el-dialog draggable v-model="dialogCaptchaVisible" title="安全验证" width="100%" style="max-width:400px">
@@ -172,11 +173,6 @@ const showCaptcha = () => {
     width: 100%;
     display: flex;
     justify-content: center;
-  }
-
-  .cardFooter {
-    color: #ccc;
-    font-size: 12px;
   }
 }
 

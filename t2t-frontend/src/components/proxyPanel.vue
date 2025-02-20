@@ -8,6 +8,7 @@ import SettingDialog from './setting.vue';
 import IPRulesDialog from './ipRules.vue';
 import { axiosInstance } from '../utils/axios';
 import { useLoginStore } from '../stores/login';
+import FooterInfo from './footer.vue';
 const loginStore = useLoginStore();
 const proxyData = ref<any>([]);
 const showProxyForm = ref(false);
@@ -302,7 +303,8 @@ const showIPRules = () => {
                     <el-button :icon="SwitchButton" type="warning" link @click="logout">退出登录</el-button>
                     <el-button :icon="Refresh" type="danger" link @click="restartService">重启服务</el-button>
                 </div>
-                <div class="cardFooter">T2T Server v0.0.1 © StupidBear Studio 2024</div>
+
+                <FooterInfo />
             </template>
         </el-card>
         <el-dialog v-model="showProxyForm" :title="proxyForm.uuid != '' ? '编辑反代理配置' : '创建反代理配置'" width="100%"
@@ -354,11 +356,6 @@ const showIPRules = () => {
     .cardHeader {
         display: flex;
         justify-content: space-between;
-    }
-
-    .cardFooter {
-        color: #ccc;
-        font-size: 12px;
     }
 
     .systemAction {

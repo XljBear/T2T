@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	log.Println("Starting T2T server...")
 	config.InitConfig()
 	config.InitBlockIPs()

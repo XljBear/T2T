@@ -12,7 +12,7 @@ onMounted(async () => {
   if (cookies.includes('token=')) {
     loginStore.isLogin = true;
   };
-  await panelStore.refreshConfig();
+  await panelStore.refreshInfo();
   inInit.value = false;
 });
 const font = reactive({

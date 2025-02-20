@@ -17,7 +17,7 @@ const settingForm = ref({
     dark_mode: false,
 });
 const refreshConfig = () => {
-    panelStore.refreshConfig();
+    panelStore.refreshInfo();
     settingForm.value.panel_password = secretPassword;
     settingForm.value.repeat_panel_password = "";
     settingForm.value.dark_mode = panelStore.darkMode;
@@ -85,7 +85,7 @@ const reload = () => {
 }
 watch(() => dialogSettingVisible.value, (val: boolean) => {
     if (!val) {
-        panelStore.refreshConfig();
+        panelStore.refreshInfo();
     }
 })
 defineExpose({ showSettingDialog });

@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -54,12 +53,13 @@ func DeleteBlockIPRule(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{})
 }
 
-func CreateAllowIPRule(ctx *gin.Context) {
+func CreateIPRule(ctx *gin.Context) {
 	type requestData struct {
 		IP      string     `json:"ip"`
-		Port    string     `json:"port"`
+		Port    []string   `json:"port"`
 		EndTime *time.Time `json:"end_time"`
 		Reason  string     `json:"reason"`
+		Type    int        `json:"type"`
 	}
 	var req requestData
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -70,47 +70,22 @@ func CreateAllowIPRule(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "IP are required"})
 		return
 	}
-	ports := []string{}
-	if req.Port != "" {
-		ports = strings.Split(req.Port, ",")
-	}
 	ipItem := config.IPItem{
 		UUID:      uuid.New().String(),
 		IP:        req.IP,
-		Port:      ports,
+		Port:      req.Port,
 		StartTime: time.Now(),
 		EndTime:   req.EndTime,
 		Reason:    req.Reason,
 	}
-	config.AllowBlockCfg.AllowBlock.AddAllowIP(ipItem)
-	ctx.JSON(http.StatusOK, gin.H{})
-}
-
-func CreateBlockIPRule(ctx *gin.Context) {
-	type requestData struct {
-		IP      string     `json:"ip"`
-		Port    string     `json:"port"`
-		EndTime *time.Time `json:"end_time"`
-		Reason  string     `json:"reason"`
-	}
-	var req requestData
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+	switch req.Type {
+	case 0:
+		config.AllowBlockCfg.AllowBlock.AddBlockIP(ipItem)
+	case 1:
+		config.AllowBlockCfg.AllowBlock.AddAllowIP(ipItem)
+	default:
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid type"})
 		return
 	}
-	if req.IP == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "IP are required"})
-		return
-	}
-	ports := strings.Split(req.Port, ",")
-	ipItem := config.IPItem{
-		UUID:      uuid.New().String(),
-		IP:        req.IP,
-		Port:      ports,
-		StartTime: time.Now(),
-		EndTime:   req.EndTime,
-		Reason:    req.Reason,
-	}
-	config.AllowBlockCfg.AllowBlock.AddBlockIP(ipItem)
 	ctx.JSON(http.StatusOK, gin.H{})
 }

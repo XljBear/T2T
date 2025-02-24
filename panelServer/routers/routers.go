@@ -34,6 +34,5 @@ func RegisterApiRouter(app *gin.Engine) {
 	app.PUT("/api/ipRules/mode", handles.UpdateRunMode)
 	app.DELETE("/api/ipRules/allow/:uuid", handles.DeleteAllowIPRule)
 	app.DELETE("/api/ipRules/block/:uuid", handles.DeleteBlockIPRule)
-	app.POST("/api/ipRules/allow", handles.CreateAllowIPRule)
-	app.POST("/api/ipRules/block", handles.CreateBlockIPRule)
+	app.POST("/api/ipRules", handles.CreateIPRule)
 }

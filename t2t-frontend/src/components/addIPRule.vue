@@ -2,12 +2,13 @@
 import { ref, reactive } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { axiosInstance } from '../utils/axios';
-import { WarningFilled } from '@element-plus/icons-vue';
 const emit = defineEmits(["onDirty"]);
 const showAddDialog = ref(false);
 const showAddIPRuleDialog = (ip: string, port: string) => {
     ipRuleForm.ip = ip;
-    ipRuleForm.port = port;
+    if (port) {
+        ipRuleForm.port = [port];
+    }
     ipRuleForm.type = 0;
     ipRuleForm.end_time = null;
     ipRuleForm.reason = "";
@@ -15,11 +16,22 @@ const showAddIPRuleDialog = (ip: string, port: string) => {
 }
 const ipRuleForm = reactive({
     ip: "",
-    port: "",
+    port: [] as string[],
     type: 0,
     end_time: null,
     reason: ""
 })
+const cleanRuleForm = () => {
+    ipRuleForm.ip = "";
+    ipRuleForm.port = [];
+    ipRuleForm.type = 0;
+    ipRuleForm.end_time = null;
+    ipRuleForm.reason = "";
+}
+const closeDialog = () => {
+    cleanRuleForm();
+    showAddDialog.value = false;
+}
 const addIPRule = () => {
     if (ipRuleForm.ip == "") {
         ElMessage({
@@ -37,11 +49,12 @@ const addIPRule = () => {
             type: 'warning',
         }
     ).then(() => {
-        axiosInstance.post(`/ipRules/${ipRuleForm.type == 0 ? 'block' : 'allow'}`, ipRuleForm).then(() => {
+        axiosInstance.post('/ipRules', ipRuleForm).then(() => {
             ElMessage({
                 message: '添加防火墙规则成功',
                 type: 'success',
             });
+            cleanRuleForm();
             showAddDialog.value = false;
             emit("onDirty");
         }).catch((resp) => {
@@ -56,22 +69,13 @@ defineExpose({ showAddIPRuleDialog });
 </script>
 <template>
     <div>
-        <el-dialog v-model="showAddDialog" title="添加防火墙规则" width="100%" style="max-width: 500px;">
+        <el-dialog @close="closeDialog" v-model="showAddDialog" title="添加防火墙规则" width="100%" style="max-width: 500px;">
             <el-form :model="ipRuleForm">
                 <el-form-item label="IP:" :label-width="80">
                     <el-input v-model="ipRuleForm.ip" autocomplete="off" />
                 </el-form-item>
                 <el-form-item label="端口:" :label-width="80">
-                    <el-col :span="20">
-                        <el-input v-model="ipRuleForm.port" autocomplete="off" />
-                    </el-col>
-                    <el-col :span="4">
-                        <el-tooltip content="留空则为所有端口，多个端口可用 ',' 英文逗号分隔">
-                            <el-icon size="large">
-                                <WarningFilled />
-                            </el-icon>
-                        </el-tooltip>
-                    </el-col>
+                    <el-input-tag v-model="ipRuleForm.port" placeholder="留空则为对所有端口有效" />
                 </el-form-item>
                 <el-form-item label="规则类型:" :label-width="80">
                     <el-select v-model="ipRuleForm.type">
@@ -88,7 +92,7 @@ defineExpose({ showAddIPRuleDialog });
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button @click="showAddDialog = false">取消</el-button>
+                    <el-button @click="closeDialog">取消</el-button>
                     <el-button type="primary" @click="addIPRule">添加</el-button>
                 </div>
             </template>

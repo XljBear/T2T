@@ -731,9 +731,9 @@ fsevents@~2.3.2, fsevents@~2.3.3:
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
 go-captcha-vue@^2:
-  version "2.0.5"
-  resolved "https://registry.npmmirror.com/go-captcha-vue/-/go-captcha-vue-2.0.5.tgz#e069d08d655ff5e99fe904ce5cc6b1c483719388"
-  integrity sha512-AWZ5tbiR434lmc9dQ3ifLuV16qe8SGeFBZiAg3Fwq6hkRYEowiAxfZhygbaNPWQGuHr1EcUZNZncYwl+rs2B4g==
+  version "2.0.6"
+  resolved "https://registry.npmmirror.com/go-captcha-vue/-/go-captcha-vue-2.0.6.tgz#affe13d1ea43deb8aed76a42547d06e3119f163a"
+  integrity sha512-dprGI59DdbkV1oeIFv4dTVadMACnzqTQhzBkWWoooI6CcH8APVIQ6P2G9wX5QTueiGrBEyeziFdm4tAz6IcftQ==
 
 he@^1.2.0:
   version "1.2.0"
